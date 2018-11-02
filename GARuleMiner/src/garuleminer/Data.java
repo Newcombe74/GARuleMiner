@@ -10,10 +10,10 @@ package garuleminer;
  * @author c2-newcombe
  */
 public class Data {
-    public final int DATA_TYPE_BINARY = 1,
+    public static final int DATA_TYPE_BINARY = 1,
             DATA_TYPE_FLOAT = 2;
     private int[] binaryArr;
-    private float realNumber;
+    private float[] realNumArr;
     private final int result, dataType;
     
     public Data(String input, int result, int dataType){
@@ -25,7 +25,7 @@ public class Data {
     private void resolveInput(String input){
         switch(this.dataType){
             case DATA_TYPE_FLOAT:
-                realNumber = Float.parseFloat(input);
+                realNumArr = transformStringToFloatArr(input);
                 break;
             case DATA_TYPE_BINARY:
                 binaryArr = transformStringToIntArr(input);
@@ -43,6 +43,22 @@ public class Data {
             try{
                 ret[i] = Character.getNumericValue(strArr[i]);
             }catch (Exception e){
+                System.err.println(e);
+                System.err.println("c = " + strArr[i]);
+            }
+        }
+        
+        return ret;
+    }
+    
+    private float[] transformStringToFloatArr(String str){
+        String[] strArr = str.split(" ");
+        float [] ret = new float[strArr.length];
+        
+        for(int i = 0; i < strArr.length; i++){
+            try{
+                ret[i] = Float.parseFloat(strArr[i]);
+            }catch (NumberFormatException e){
                 System.err.println(e);
                 System.err.println("c = " + strArr[i]);
             }

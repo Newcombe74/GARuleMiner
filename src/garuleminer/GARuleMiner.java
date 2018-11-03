@@ -12,6 +12,8 @@ import java.util.ArrayList;
 import java.io.File;
 import java.io.FileNotFoundException;
 
+import geneticalgorithm.GeneticAlgorithm;
+
 /**
  *
  * @author c2-newcombe
@@ -26,11 +28,16 @@ public class GARuleMiner {
      * @throws java.io.FileNotFoundException
      */
     public static void main(String[] args) throws FileNotFoundException {
+        //Read and store data
         data1 = readDataFile(1, DATA_TYPE_BINARY);
         data2 = readDataFile(2, DATA_TYPE_BINARY);
         data3 = readDataFile(3, DATA_TYPE_FLOAT);
 
-        int i = 0;
+        RuleMiner ga = new RuleMiner(100, 50, 50);
+        ga.run(GeneticAlgorithm.SELECTION_TOURNEMENT);
+        
+        System.out.println("Best Result = " 
+                + ga.getResult(50, GeneticAlgorithm.RESULT_BEST));
     }
 
     private static ArrayList<Data> readDataFile(int num, int dataType) throws FileNotFoundException {

@@ -10,23 +10,23 @@ package geneticalgorithm;
  * @author c2-newcombe
  */
 public class Individual {
-    private int[] chromosome;
+    private Object[] chromosome;
     private int fitness;
 
-    public Individual(int[] chromosome) {
+    public Individual(Object[] chromosome) {
         this.chromosome = chromosome;
     }
     
-    public Individual(int[] chromosome, int fitness) {
+    public Individual(Object[] chromosome, int fitness) {
         this.chromosome = chromosome;
         this.fitness = fitness;
     }
     
-    public int[] getChromosome() {
+    public Object[] getChromosome() {
         return chromosome;
     }
 
-    public void setChromosome(int[] gene) {
+    public void setChromosome(Object[] gene) {
         this.chromosome = gene;
     }
 

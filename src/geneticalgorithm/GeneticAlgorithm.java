@@ -14,21 +14,24 @@ import java.util.ArrayList;
 public class GeneticAlgorithm {
 
     //Selection Type
-    public final int SELECTION_TOURNEMENT = 1,
+    public final static int SELECTION_TOURNEMENT = 1,
             SELECTION_ROULETTE = 2;
-    
+
     //Hyperparameters
-    private int populationSize,
+    protected int populationSize,
             numberOfGenerations,
             chromosomeSize;
-    private double probabilityOfMutation;
+    protected double probabilityOfMutation;
 
     //Population
     private Individual population[];
     private Individual offspring[];
-    
+
     //Results
-    private Results genResults;
+    public final static int RESULT_BEST = 0,
+            RESULT_AVERAGE = 1,
+            RESULT_SUM = 2;
+    protected float[][] results;
 
     public GeneticAlgorithm() {
     }
@@ -37,45 +40,51 @@ public class GeneticAlgorithm {
         this.populationSize = populationSize;
         this.numberOfGenerations = numberOfGenerations;
         this.chromosomeSize = chromosomeSize;
-        this.probabilityOfMutation = calcRandMutationRate();
+        this.probabilityOfMutation = (float) 1 / this.populationSize;
+        this.results = new float[this.numberOfGenerations][3];
     }
-    
+
     public GeneticAlgorithm(int populationSize, int numberOfGenerations, int chromosomeSize, double probabilityOfMutation) {
         this.populationSize = populationSize;
         this.numberOfGenerations = numberOfGenerations;
         this.chromosomeSize = chromosomeSize;
         this.probabilityOfMutation = probabilityOfMutation;
+        this.results = new float[this.numberOfGenerations][3];
     }
-    
+
     public void run(int selectionType) {
+        //INIT populations
+        this.population = new Individual[populationSize];
+        this.offspring = new Individual[populationSize];
+        
         //SET each individuals genes to be 1 or 0 at random
-        for (int i = 0; i < population.length; i++) {
-            int[] genes = new int[chromosomeSize];
+        for (int i = 0; i < this.population.length; i++) {
+            Object[] genes = new Object[this.chromosomeSize];
 
             for (int j = 0; j < genes.length; j++) {
                 genes[j] = (int) ((Math.random() * 2) % 2);
             }
-            population[i] = new Individual(genes);
+            this.population[i] = new Individual(genes);
         }
 
-        for (int g = 0; g < numberOfGenerations; g++) {
-            population = calcFitness(population);
+        for (int g = 0; g < this.numberOfGenerations; g++) {
+            this.population = calcFitness(this.population);
 
-            genResults.results[g].addBestFitness(new Double(bestFitness(population)));
-            genResults.results[g].addAvgFitness(new Double(avgFitness(population)));
-            genResults.results[g].addSumFitness(new Double(sumFitness(population)));
+            this.results[g][RESULT_BEST] = bestFitness(this.population);
+            this.results[g][RESULT_AVERAGE] = avgFitness(this.population);
+            this.results[g][RESULT_SUM] = sumFitness(this.population);
 
-            offspring = crossover();
-            
-            offspring = mutate();
+            this.offspring = crossover();
 
-            offspring = calcFitness(offspring);
+            this.offspring = mutate();
 
-            population = selection(selectionType);
+            this.offspring = calcFitness(this.offspring);
+
+            this.population = selection(selectionType);
 
         }
     }
-    
+
     //START_Selection
     private Individual[] selection(int selectionType) {
         switch (selectionType) {
@@ -143,13 +152,13 @@ public class GeneticAlgorithm {
     //END_Selection
 
     //START_Crossover
-    private Individual[] crossover() {
+    protected Individual[] crossover() {
         ArrayList<Individual> children = new ArrayList<>();
 
         for (int i = 0; i < populationSize - 1; i++) {
-                children.addAll(singlePointCrossover(
-                        population[i].getChromosome(),
-                        population[(i + 1)].getChromosome()));
+            children.addAll(singlePointCrossover(
+                    population[i].getChromosome(),
+                    population[(i + 1)].getChromosome()));
         }
 
         Individual[] ret = new Individual[children.size()];
@@ -160,9 +169,9 @@ public class GeneticAlgorithm {
         return ret;
     }
 
-    private ArrayList<Individual> singlePointCrossover(int[] parent1, int[] parent2) {
+    protected ArrayList<Individual> singlePointCrossover(Object[] parent1, Object[] parent2) {
         ArrayList<Individual> children = new ArrayList<>();
-        int[][] crossoverGenes = new int[2][chromosomeSize];
+        Object[][] crossoverGenes = new Object[2][chromosomeSize];
         int child1 = 0, child2 = 1;
         int crossoverPoint = (int) (Math.random() * chromosomeSize) - 1;
 
@@ -194,32 +203,32 @@ public class GeneticAlgorithm {
         return offspring;
     }
 
-    private int calcRandMutationRate() {
-        int min = 1 / populationSize;
-        int max = 1 / chromosomeSize;
+    protected float calcRandMutationRate() {
+        float min = (float) 1 / populationSize;
+        float max = (float) 1 / chromosomeSize;
 
         if (min >= max) {
             throw new IllegalArgumentException(
                     "Population size must be greater than chromosome size");
         }
-        return (int) (Math.random() * ((max - min) + 1)) + min;
+        return (float) (Math.random() * ((max - min) + 1)) + min;
     }
 
-    private int[] mutateChromosome(int[] chrom) {
-        int[] mutatedGenes = chrom;
+    protected Object[] mutateChromosome(Object[] chrom) {
+        Object[] mutatedGenes = chrom;
 
         for (int i = 0; i < chromosomeSize; i++) {
             double m = Math.random();
             if (probabilityOfMutation >= m) {
-                mutatedGenes[i] = invert(chrom[i]);
+                mutatedGenes[i] = flipBinaryInt(chrom[i]);
             }
         }
 
         return mutatedGenes;
     }
 
-    private int invert(int gene) {
-        if (gene == 1) {
+    private int flipBinaryInt(Object gene) {
+        if ((int) gene == 1) {
             return 0;
         } else {
             return 1;
@@ -231,7 +240,7 @@ public class GeneticAlgorithm {
     protected Individual[] calcFitness(Individual[] pop) {
         return null;
     }
-    
+
     private int avgFitness(Individual[] pop) {
         return sumFitness(pop) / pop.length;
     }
@@ -273,4 +282,49 @@ public class GeneticAlgorithm {
         return (100 / b) * a;
     }
     //END_Utils
+
+    public int getPopulationSize() {
+        return populationSize;
+    }
+
+    public void setPopulationSize(int populationSize) {
+        this.populationSize = populationSize;
+    }
+
+    public int getNumberOfGenerations() {
+        return numberOfGenerations;
+    }
+
+    public int getChromosomeSize() {
+        return chromosomeSize;
+    }
+
+    public void setChromosomeSize(int chromosomeSize) {
+        this.chromosomeSize = chromosomeSize;
+    }
+
+    public double getProbabilityOfMutation() {
+        return probabilityOfMutation;
+    }
+
+    public void setProbabilityOfMutation(float probabilityOfMutation) {
+        this.probabilityOfMutation = probabilityOfMutation;
+    }
+
+    public Individual[] getPopulation() {
+        return population;
+    }
+
+    public Individual[] getOffspring() {
+        return offspring;
+    }
+
+    public float[][] getResults() {
+        return results;
+    }
+
+    public float getResult(int generation, int resultType) {
+        return results[generation - 1][resultType];
+    }
+
 }

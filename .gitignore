@@ -23,3 +23,5 @@
 hs_err_pid*
 /GARuleMiner/nbproject/private/
 /GARuleMiner/build/
+/nbproject/private/
+/build/

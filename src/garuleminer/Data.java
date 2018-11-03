@@ -12,7 +12,7 @@ package garuleminer;
 public class Data {
     public static final int DATA_TYPE_BINARY = 1,
             DATA_TYPE_FLOAT = 2;
-    private int[] binaryArr;
+    private char[] charArr;
     private float[] realNumArr;
     private final int result, dataType;
     
@@ -28,7 +28,7 @@ public class Data {
                 realNumArr = transformStringToFloatArr(input);
                 break;
             case DATA_TYPE_BINARY:
-                binaryArr = transformStringToIntArr(input);
+                charArr = input.toCharArray();
                 break;
             default:
                 System.err.println("Data Type Not Found");
@@ -66,4 +66,5 @@ public class Data {
         
         return ret;
     }
+
 }

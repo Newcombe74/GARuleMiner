@@ -45,8 +45,13 @@ public class GARuleMiner {
             int result = Integer.parseInt(line[line.length - 1]);
             
             String input = "";
-            for(int i = 0; i < line.length - 2; i++){
-                input += line[i] + " ";
+            
+            for(int i = 0; i < line.length - 1; i++){
+                input += line[i];
+                
+                if((i + 1) < (line.length - 1)){
+                    input += " ";
+                }
             }
             ret.add(new Data(input, result, dataType));
         }

@@ -32,7 +32,8 @@ public class GeneticAlgorithm {
             RESULT_AVERAGE = 1,
             RESULT_SUM = 2;
     protected float[][] results;
-
+    
+    //START_CONSTRUCTORS
     public GeneticAlgorithm() {
     }
 
@@ -51,21 +52,15 @@ public class GeneticAlgorithm {
         this.probabilityOfMutation = probabilityOfMutation;
         this.results = new float[this.numberOfGenerations][3];
     }
-
+    //END_CONSTRUCTORS
+    
     public void run(int selectionType) {
         //INIT populations
         this.population = new Individual[populationSize];
         this.offspring = new Individual[populationSize];
         
         //SET each individuals genes to be 1 or 0 at random
-        for (int i = 0; i < this.population.length; i++) {
-            Object[] genes = new Object[this.chromosomeSize];
-
-            for (int j = 0; j < genes.length; j++) {
-                genes[j] = (int) ((Math.random() * 2) % 2);
-            }
-            this.population[i] = new Individual(genes);
-        }
+        initChromosomes();
 
         for (int g = 0; g < this.numberOfGenerations; g++) {
             this.population = calcFitness(this.population);
@@ -84,7 +79,19 @@ public class GeneticAlgorithm {
 
         }
     }
+    
+    protected void initChromosomes(){
+        //SET to random 1s and 0s by default
+        for (int i = 0; i < this.population.length; i++) {
+            Object[] genes = new Object[this.chromosomeSize];
 
+            for (int j = 0; j < genes.length; j++) {
+                genes[j] = (int) ((Math.random() * 2) % 2);
+            }
+            this.population[i] = new Individual(genes);
+        }
+    }
+    
     //START_Selection
     private Individual[] selection(int selectionType) {
         switch (selectionType) {
@@ -283,6 +290,7 @@ public class GeneticAlgorithm {
     }
     //END_Utils
 
+    //START_GETTERS_AND_SETTERS
     public int getPopulationSize() {
         return populationSize;
     }
@@ -336,4 +344,5 @@ public class GeneticAlgorithm {
     public float getResult(int generation, int resultType) {
         return results[generation - 1][resultType];
     }
+    //END_GETTERS_AND_SETTERS
 }

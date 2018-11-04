@@ -314,6 +314,16 @@ public class GeneticAlgorithm {
     public Individual[] getPopulation() {
         return population;
     }
+    
+    public Individual getBestIndividual() {
+        Individual ret = new Individual();
+        for (Individual i : population) {
+            if (i.getFitness() > ret.getFitness()) {
+                ret = i;
+            }
+        }
+        return ret;
+    }
 
     public Individual[] getOffspring() {
         return offspring;
@@ -326,5 +336,4 @@ public class GeneticAlgorithm {
     public float getResult(int generation, int resultType) {
         return results[generation - 1][resultType];
     }
-
 }

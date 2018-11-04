@@ -11,8 +11,11 @@ package geneticalgorithm;
  */
 public class Individual {
     private Object[] chromosome;
-    private int fitness;
+    private int fitness = 0;
 
+    public Individual() {
+    }
+    
     public Individual(Object[] chromosome) {
         this.chromosome = chromosome;
     }

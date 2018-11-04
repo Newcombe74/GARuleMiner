@@ -9,17 +9,23 @@ package garuleminer;
  *
  * @author c2-newcombe
  */
-public class Data {
+public class Rule {
     public static final int DATA_TYPE_BINARY = 1,
             DATA_TYPE_FLOAT = 2;
     private char[] charArr;
     private float[] realNumArr;
-    private final int result, dataType;
+    private final int output, dataType;
     
-    public Data(String input, int result, int dataType){
-        this.result = result;
+    public Rule(String input, int output, int dataType){
+        this.output = output;
         this.dataType = dataType;
         resolveInput(input);
+    }
+    
+    public Rule(char[] input, int output, int dataType){
+        this.output = output;
+        this.dataType = dataType;
+        charArr = input;
     }
     
     private void resolveInput(String input){
@@ -67,4 +73,27 @@ public class Data {
         return ret;
     }
 
+    public char[] getCharArr() {
+        return charArr;
+    }
+
+    public void setCharArr(char[] charArr) {
+        this.charArr = charArr;
+    }
+
+    public float[] getRealNumArr() {
+        return realNumArr;
+    }
+
+    public void setRealNumArr(float[] realNumArr) {
+        this.realNumArr = realNumArr;
+    }
+
+    public int getOutput() {
+        return output;
+    }
+
+    public int getDataType() {
+        return dataType;
+    }
 }

@@ -24,7 +24,7 @@ public class GeneticAlgorithm {
     protected double probabilityOfMutation;
 
     //Population
-    private Individual population[];
+    protected Individual population[];
     private Individual offspring[];
 
     //Results

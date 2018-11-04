@@ -5,8 +5,8 @@
  */
 package garuleminer;
 
-import static garuleminer.Data.DATA_TYPE_BINARY;
-import static garuleminer.Data.DATA_TYPE_FLOAT;
+import static garuleminer.Rule.DATA_TYPE_BINARY;
+import static garuleminer.Rule.DATA_TYPE_FLOAT;
 import java.util.Scanner;
 import java.util.ArrayList;
 import java.io.File;
@@ -21,7 +21,7 @@ import geneticalgorithm.GeneticAlgorithm;
 public class GARuleMiner {
 
     //Imported Data
-    private static ArrayList<Data> data1, data2, data3;
+    private static Rule[] data1, data2, data3;
 
     /**
      * @param args the command line arguments
@@ -33,15 +33,15 @@ public class GARuleMiner {
         data2 = readDataFile(2, DATA_TYPE_BINARY);
         data3 = readDataFile(3, DATA_TYPE_FLOAT);
 
-        RuleMiner ga = new RuleMiner(100, 50, 50);
-        ga.run(GeneticAlgorithm.SELECTION_TOURNEMENT);
+        RuleMiner ga = new RuleMiner(100, 50, data2, 10);
+        ga.run(GeneticAlgorithm.SELECTION_ROULETTE);
         
         System.out.println("Best Result = " 
                 + ga.getResult(50, GeneticAlgorithm.RESULT_BEST));
     }
 
-    private static ArrayList<Data> readDataFile(int num, int dataType) throws FileNotFoundException {
-        ArrayList<Data> ret = new ArrayList<>();
+    private static Rule[] readDataFile(int num, int dataType) throws FileNotFoundException {
+        ArrayList<Rule> rules = new ArrayList<>();
         String[] line;
 
         File file = new File("./src/garuleminer/data/data" + num + ".txt");
@@ -60,9 +60,13 @@ public class GARuleMiner {
                     input += " ";
                 }
             }
-            ret.add(new Data(input, result, dataType));
+            rules.add(new Rule(input, result, dataType));
         }
 
+        Rule[] ret = new Rule[rules.size()];
+        for(int r = 0; r < ret.length; r++){
+            ret[r] = rules.get(r);
+        }
         return ret;
     }
 }

@@ -24,7 +24,7 @@ public class RuleMiner extends GeneticAlgorithm {
         super.populationSize = populationSize;
         super.numberOfGenerations = numberOfGenerations;
         super.probabilityOfMutation = (float) 1 / super.populationSize;
-        super.results = new float[super.numberOfGenerations][3];
+        super.results = new float[super.numberOfGenerations][4];
         this.dataRules = ruleBase;
         this.nRules = nRules;
         this.conditionSize = calcConditionSize();
@@ -38,7 +38,7 @@ public class RuleMiner extends GeneticAlgorithm {
         super.numberOfGenerations = numberOfGenerations;
         super.chromosomeSize = chromosomeSize;
         super.probabilityOfMutation = probabilityOfMutation;
-        super.results = new float[super.numberOfGenerations][3];
+        super.results = new float[super.numberOfGenerations][4];
         this.dataRules = ruleBase;
         this.nRules = nRules;
         this.conditionSize = calcConditionSize();
@@ -136,8 +136,35 @@ public class RuleMiner extends GeneticAlgorithm {
     }
 
     @Override
-    protected Individual[] crossover() {
-        return population;
+    protected ArrayList<Individual> singlePointCrossover(Object[] parent1, Object[] parent2) {
+        ArrayList<Individual> children = new ArrayList<>();
+        Object[][] crossoverGenes = new Object[2][super.chromosomeSize];
+        final int child1 = 0, child2 = 1;
+        int geneCounter = 0, ruleCounter = 0, ruleSize = this.conditionSize + 1;
+        int crossoverPoint = new Random().nextInt(
+                (super.chromosomeSize / this.nRules) - 1) + 1;
+
+        for (int i = 0; i < super.chromosomeSize; i++) {
+            if(geneCounter == ruleSize){
+                ruleCounter++;
+                geneCounter = 0;
+            }
+            
+            if (ruleCounter < crossoverPoint) {
+                crossoverGenes[child1][i] = parent1[i];
+                crossoverGenes[child2][i] = parent2[i];
+            } else {
+                crossoverGenes[child1][i] = parent2[i];
+                crossoverGenes[child2][i] = parent1[i];
+            }
+            
+            geneCounter++;
+        }
+
+        children.add(new Individual(crossoverGenes[child1]));
+        children.add(new Individual(crossoverGenes[child2]));
+
+        return children;
     }
     
     @Override
@@ -164,8 +191,8 @@ public class RuleMiner extends GeneticAlgorithm {
                         Character.getNumericValue(genes[k++]), Rule.DATA_TYPE_BINARY));
             }
 
-            for (Rule indivRule : indivRuleBase) {
-                for (Rule dataRule : dataRules) {
+            for (Rule dataRule : dataRules) {
+                for (Rule indivRule : indivRuleBase) {
                     //IF condition matched
                     if (evaluateConditionMatch(indivRule, dataRule)) {
                         //IF output matches

@@ -17,7 +17,7 @@ public class RuleMiner extends GeneticAlgorithm {
 
     private final Rule[] dataRules;
 
-    private final int nRules, conditionSize;
+    private int nRules, conditionSize;
 
     public RuleMiner(int populationSize, int numberOfGenerations,
             Rule[] ruleBase, int nRules) {
@@ -220,5 +220,11 @@ public class RuleMiner extends GeneticAlgorithm {
             }
         }
         return true;
+    }
+    
+    public void setNRules(int nRules){
+        this.nRules = nRules;
+        this.conditionSize = calcConditionSize();
+        super.chromosomeSize = calcChromSize();
     }
 }

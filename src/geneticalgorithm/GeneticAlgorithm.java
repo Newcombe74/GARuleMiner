@@ -360,6 +360,7 @@ public class GeneticAlgorithm {
     
     public void setNumberOfGenerations(int numberOfGenerations) {
         this.numberOfGenerations = numberOfGenerations;
+        this.results = new float[this.numberOfGenerations][4];
     }
 
     public void setProbabilityOfMutation(double probabilityOfMutation) {

@@ -95,7 +95,7 @@ public class RuleMiner extends GeneticAlgorithm {
             if (this.conditionSize == condBound) {
                 outputGene = true;
                 condBound = 0;
-            }else{
+            } else {
                 outputGene = false;
                 condBound++;
             }
@@ -145,11 +145,11 @@ public class RuleMiner extends GeneticAlgorithm {
                 (super.chromosomeSize / this.nRules) - 1) + 1;
 
         for (int i = 0; i < super.chromosomeSize; i++) {
-            if(geneCounter == ruleSize){
+            if (geneCounter == ruleSize) {
                 ruleCounter++;
                 geneCounter = 0;
             }
-            
+
             if (ruleCounter < crossoverPoint) {
                 crossoverGenes[child1][i] = parent1[i];
                 crossoverGenes[child2][i] = parent2[i];
@@ -157,7 +157,7 @@ public class RuleMiner extends GeneticAlgorithm {
                 crossoverGenes[child1][i] = parent2[i];
                 crossoverGenes[child2][i] = parent1[i];
             }
-            
+
             geneCounter++;
         }
 
@@ -166,31 +166,15 @@ public class RuleMiner extends GeneticAlgorithm {
 
         return children;
     }
-    
+
     @Override
     protected Individual[] calcFitness(Individual[] pop) {
         Individual[] ret = new Individual[pop.length];
-        
+
         for (int i = 0; i < pop.length; i++) {
-            ArrayList<Rule> indivRuleBase = new ArrayList<>();
-            int fitness = 0, k = 0;
-
-            Object[] oGenes = pop[i].getChromosome();
-            Character[] genes = new Character[pop[i].getChromosome().length];
-            for (int g = 0; g < genes.length; g++) {
-                genes[g] = (Character) oGenes[g];
-            }
-
-            for (int r = 0; r < this.nRules; r++) {
-                char[] cond = new char[this.conditionSize];
-
-                for (int c = 0; c < this.conditionSize; c++) {
-                    cond[c] = genes[k++];
-                }
-                indivRuleBase.add(new Rule((char[]) cond, 
-                        Character.getNumericValue(genes[k++]), Rule.DATA_TYPE_BINARY));
-            }
-
+            int fitness = 0;
+            ArrayList<Rule> indivRuleBase = chromosomeToRules(pop[i].getChromosome());
+           
             for (Rule dataRule : dataRules) {
                 for (Rule indivRule : indivRuleBase) {
                     //IF condition matched
@@ -203,8 +187,30 @@ public class RuleMiner extends GeneticAlgorithm {
                     }
                 }
             }
-            ret[i] = new Individual(genes, fitness);
+            ret[i] = new Individual(pop[i].getChromosome(), fitness);
         }
+        return ret;
+    }
+
+    public ArrayList<Rule> chromosomeToRules(Object[] oGenes) {
+        ArrayList<Rule> ret = new ArrayList<>();
+        int k = 0;
+        Character[] genes = new Character[oGenes.length];
+        
+        for (int g = 0; g < genes.length; g++) {
+            genes[g] = (Character) oGenes[g];
+        }
+
+        for (int r = 0; r < this.nRules; r++) {
+            char[] cond = new char[this.conditionSize];
+
+            for (int c = 0; c < this.conditionSize; c++) {
+                cond[c] = genes[k++];
+            }
+            ret.add(new Rule((char[]) cond,
+                    Character.getNumericValue(genes[k++]), Rule.DATA_TYPE_BINARY));
+        }
+
         return ret;
     }
 
@@ -221,10 +227,16 @@ public class RuleMiner extends GeneticAlgorithm {
         }
         return true;
     }
-    
-    public void setNRules(int nRules){
+
+    public void setNRules(int nRules) {
         this.nRules = nRules;
         this.conditionSize = calcConditionSize();
         super.chromosomeSize = calcChromSize();
     }
+
+    public int getConditionSize() {
+        return conditionSize;
+    }
+    
+    
 }

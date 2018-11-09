@@ -436,6 +436,8 @@ public class GARuleMiner {
             sb.append(',');
             sb.append("Rule Output");
             sb.append(',');
+            sb.append("Fitness Awarded");
+            sb.append(',');
         }
         sb.append("Fitness");
         sb.append('\n');
@@ -594,8 +596,12 @@ public class GARuleMiner {
         sb.append(String.valueOf(id));
         sb.append(',');
         for (Rule r : rules) {
+            sb.append('|');
             sb.append(String.valueOf(r.getCharArr()));
             sb.append(',');
+            sb.append(String.valueOf(r.getOutput()));
+            sb.append(',');
+            //TODO
             sb.append(String.valueOf(r.getOutput()));
             sb.append(',');
         }

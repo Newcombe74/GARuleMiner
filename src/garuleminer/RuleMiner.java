@@ -88,7 +88,7 @@ public class RuleMiner extends GeneticAlgorithm {
     protected Object[] mutateChromosome(Object[] chrom) {
         Object[] mutatedGenes = chrom;
         int condBound = 0;
-        boolean outputGene = false;
+        boolean outputGene;
 
         for (int i = 0; i < chrom.length; i++) {
             double m = Math.random();
@@ -125,6 +125,11 @@ public class RuleMiner extends GeneticAlgorithm {
                         break;
                     case '#':
                         intArray = new int[]{'0', '1'};
+                        idx = new Random().nextInt(intArray.length);
+                        mutatedGenes[i] = (char) intArray[idx];
+                        break;
+                    default:
+                        intArray = new int[]{'0', '1', '#'};
                         idx = new Random().nextInt(intArray.length);
                         mutatedGenes[i] = (char) intArray[idx];
                         break;
@@ -174,7 +179,7 @@ public class RuleMiner extends GeneticAlgorithm {
         for (int i = 0; i < pop.length; i++) {
             int fitness = 0;
             ArrayList<Rule> indivRuleBase = chromosomeToRules(pop[i].getChromosome());
-           
+
             for (Rule dataRule : dataRules) {
                 for (Rule indivRule : indivRuleBase) {
                     //IF condition matched
@@ -196,7 +201,7 @@ public class RuleMiner extends GeneticAlgorithm {
         ArrayList<Rule> ret = new ArrayList<>();
         int k = 0;
         Character[] genes = new Character[oGenes.length];
-        
+
         for (int g = 0; g < genes.length; g++) {
             genes[g] = (Character) oGenes[g];
         }
@@ -237,6 +242,5 @@ public class RuleMiner extends GeneticAlgorithm {
     public int getConditionSize() {
         return conditionSize;
     }
-    
-    
+
 }

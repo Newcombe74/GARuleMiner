@@ -19,6 +19,10 @@ public class RuleMiner extends GeneticAlgorithm {
 
     private int nRules, conditionSize;
 
+    public RuleMiner(Rule[] ruleBase) {
+        this.dataRules = ruleBase;
+    }
+
     public RuleMiner(int populationSize, int numberOfGenerations,
             Rule[] ruleBase, int nRules) {
         super.populationSize = populationSize;
@@ -197,6 +201,31 @@ public class RuleMiner extends GeneticAlgorithm {
         return ret;
     }
 
+    public int[] calcRuleFitness(ArrayList<Rule> indivRuleBase) {
+        int ruleIdx;
+        
+        int[] ruleFitnesses = new int[indivRuleBase.size()];
+        for (int i = 0; i < ruleFitnesses.length; i++) {
+            ruleFitnesses[i] = 0;
+        }
+
+        for (Rule dataRule : dataRules) {
+            ruleIdx = 0;
+            for (Rule indivRule : indivRuleBase) {
+                //IF condition matches
+                if (evaluateConditionMatch(indivRule, dataRule)) {
+                    //IF output matches
+                    if (indivRule.getOutput() == dataRule.getOutput()) {
+                        ruleFitnesses[ruleIdx]++;
+                    }
+                    break;
+                }
+                ruleIdx++;
+            }
+        }
+        return ruleFitnesses;
+    }
+
     public ArrayList<Rule> chromosomeToRules(Object[] oGenes) {
         ArrayList<Rule> ret = new ArrayList<>();
         int k = 0;
@@ -222,7 +251,7 @@ public class RuleMiner extends GeneticAlgorithm {
     private boolean evaluateConditionMatch(Rule b, Rule d) {
         char[] cond1 = b.getCharArr(), cond2 = d.getCharArr();
 
-        for (int c = 0; c < this.conditionSize; c++) {
+        for (int c = 0; c < cond1.length; c++) {
             if (cond1[c] == '#' || cond2[c] == '#') {
                 continue;
             }

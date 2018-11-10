@@ -41,7 +41,7 @@ public class GARuleMiner {
     //Generations
     private static int[] nGensVariations;
     private static int nGensIdx = 0;
-    private static int nGens = POP_SIZE_MIN / 2;
+    private static int nGens = popSize / 2;
     //Mutation
     private static double[] mutationRateVariations;
     private static int mutationRateIdx = 0;
@@ -432,11 +432,11 @@ public class GARuleMiner {
         sb.append("Id");
         sb.append(',');
         for (int i = 0; i < nRules; i++) {
-            sb.append("Rule Condition");
+            sb.append("Rule ");
+            sb.append(String.valueOf(i + 1));
             sb.append(',');
-            sb.append("Rule Output");
-            sb.append(',');
-            sb.append("Fitness Awarded");
+            sb.append("Fitness Awarded ");
+            sb.append(String.valueOf(i + 1));
             sb.append(',');
         }
         sb.append("Fitness");
@@ -592,17 +592,20 @@ public class GARuleMiner {
     }
 
     private static void writeIndividualsResults(int id, ArrayList<Rule> rules, int fitness) {
+        Rule rule;
+        RuleMiner rm = new RuleMiner(data);
+        int[] ruleFitnesses = rm.calcRuleFitness(rules);
+        
         StringBuilder sb = new StringBuilder();
         sb.append(String.valueOf(id));
         sb.append(',');
-        for (Rule r : rules) {
-            sb.append('|');
-            sb.append(String.valueOf(r.getCharArr()));
+        for (int r = 0; r < rules.size(); r++) {
+            rule = rules.get(r);
+            sb.append(String.valueOf(rule.getCharArr()));
+            sb.append(' ');
+            sb.append(String.valueOf(rule.getOutput()));
             sb.append(',');
-            sb.append(String.valueOf(r.getOutput()));
-            sb.append(',');
-            //TODO
-            sb.append(String.valueOf(r.getOutput()));
+            sb.append(String.valueOf(ruleFitnesses[r]));
             sb.append(',');
         }
         sb.append(String.valueOf(fitness));
@@ -612,6 +615,7 @@ public class GARuleMiner {
     //END_CSV
 
     //START_Utils
+    
     private static ArrayList<Rule> chromosomeToRules(Object[] oGenes, int conditionSize) {
         ArrayList<Rule> ret = new ArrayList<>();
         int k = 0;

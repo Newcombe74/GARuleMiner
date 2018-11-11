@@ -295,12 +295,8 @@ public class GARuleMiner {
     //START_TESTS
     private static void runMutationVarianceTest() throws FileNotFoundException {
 
-        RuleMiner ga = new RuleMiner(POP_SIZE_MIN, N_GENS_MIN, data, N_RULES_MIN);
+        RuleMiner ga = new RuleMiner(popSize, nGens, data, nRules);
         chromSize = ga.getChromosomeSize();
-        popSize = chromSize * 2;
-        nGens = popSize / 2;
-        ga.setPopulationSize(popSize);
-        ga.setNumberOfGenerations(nGens);
         initMutationRates(popSize, chromSize);
 
         initMutationsCSV("MutationRateVarianceResults.csv");
@@ -309,7 +305,7 @@ public class GARuleMiner {
             for (int r = 0; r < N_RUNS; r++) {
                 ga.setProbabilityOfMutation(mutationRateVariations[m]);
 
-                ga.run(RuleMiner.SELECTION_ROULETTE);
+                ga.run(RuleMiner.SELECTION_TOURNEMENT);
 
                 recordResults(ga, r);
             }
@@ -439,13 +435,13 @@ public class GARuleMiner {
         sb.append(String.valueOf(chromSize));
         sb.append('\n');
         sb.append("No of Generations = ");
-        sb.append(String.valueOf(N_GENS_MIN));
+        sb.append(String.valueOf(nGens));
         sb.append('\n');
         sb.append("No of Runs = ");
         sb.append(String.valueOf(N_RUNS));
         sb.append('\n');
         sb.append("No of Rules = ");
-        sb.append(String.valueOf(N_RULES_MIN));
+        sb.append(String.valueOf(nRules));
         sb.append('\n');
         sb.append('\n');
         sb.append("Id");
@@ -541,13 +537,13 @@ public class GARuleMiner {
         sb.append(String.valueOf(popSize));
         sb.append('\n');
         sb.append("No of Generations = ");
-        sb.append(String.valueOf(N_GENS_MIN));
+        sb.append(String.valueOf(nGens));
         sb.append('\n');
         sb.append("No of Runs = ");
         sb.append(String.valueOf(N_RUNS));
         sb.append('\n');
         sb.append("Probability of Mutation = ");
-        sb.append(String.valueOf(1 / popSize));
+        sb.append(String.valueOf(mutationRate));
         sb.append('\n');
         sb.append('\n');
         sb.append("Id");

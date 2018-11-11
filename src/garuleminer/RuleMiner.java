@@ -226,6 +226,19 @@ public class RuleMiner extends GeneticAlgorithm {
         return ruleFitnesses;
     }
 
+    public int countFitRules(ArrayList<Rule> indivRuleBase) {
+        int nFitRules = 0;
+        
+        int[] ruleFitnesses = calcRuleFitness(indivRuleBase);
+        
+        for(int fitness : ruleFitnesses){
+            if(fitness > 0){
+                nFitRules++;
+            }
+        }
+        return nFitRules;
+    }
+    
     public ArrayList<Rule> chromosomeToRules(Object[] oGenes) {
         ArrayList<Rule> ret = new ArrayList<>();
         int k = 0;

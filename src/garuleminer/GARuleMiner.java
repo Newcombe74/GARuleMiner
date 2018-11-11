@@ -28,7 +28,7 @@ public class GARuleMiner {
             N_GENS_MIN = 1,
             N_GENS_MAX = 100,
             N_GENS_RES_STEP = 1,
-            N_RUNS = 50,
+            N_RUNS = 20,
             N_RULES_MIN = 1,
             N_RULES_MAX = 100,
             N_RULES_RES_STEP = 1,
@@ -36,20 +36,21 @@ public class GARuleMiner {
     //Population
     private static int[] popSizeVariations;
     private static int popSizeIdx = 0;
-    private static int popSize = 100;
+    private static int popSize = 1000;
     //Generations
     private static int[] nGensVariations;
     private static int nGensIdx = 0;
-    private static int nGens = 50;
+    private static int nGens = 100;
     //Mutation
     private static double[] mutationRateVariations;
     private static int mutationRateIdx = 0;
     private static double mutationRate = (double) 1 / popSize;
+    private static double mRateMod = 1.5;
     //Rules
     private static int[] nRulesVariations;
     private static int nRulesIdx = 0;
     private static int chromSize = 0;
-    private static int nRules = 10;
+    private static int nRules = 40;
 
     //Test Option Indexes
     private static final int TEST_MUT = 1,
@@ -112,7 +113,7 @@ public class GARuleMiner {
         while (!inputValid) {
             System.out.println("Please enter the number to either:");
             System.out.println(1 + ". Mine Data For Rules");
-            System.out.println(2 + ". Test Hyperparameter Variences");
+            System.out.println(2 + ". Test Hyperparameter Variances");
 
             selectedDataOption = scanner.nextInt();
 
@@ -272,20 +273,43 @@ public class GARuleMiner {
     private static void runBinaryRuleMining() throws FileNotFoundException {
 
         RuleMiner ga = new RuleMiner(popSize, nGens, data, nRules);
+        Individual bestIndiv = new Individual();
         ArrayList<Rule> rules;
-        int conditionSize = ga.getConditionSize();
-
+        int conditionSize = ga.getConditionSize(),
+                bestFitness = 0, bestNFitRules = 0, nFitRules, bestIndivID = 0;
+        
+        //Calculate Mutation Rate
+        chromSize = ga.getChromosomeSize();
+        mutationRate = (double) (((double) 1 / popSize) + ((double) 1 / chromSize) / mRateMod); 
+        ga.setProbabilityOfMutation(mutationRate);
+        
         initFittestCSV("FittestIndividualsResults.csv");
 
         for (int r = 0; r < N_RUNS; r++) {
-            ga.run(RuleMiner.SELECTION_ROULETTE);
+            ga.run(RuleMiner.SELECTION_TOURNEMENT);
 
+            //Write fittest individual of the current run
             Individual i = ga.getBestIndividual();
             rules = chromosomeToRules(i.getChromosome(), conditionSize);
-            writeIndividualsResults(r + 1, rules, i.getFitness());
-
+            writeIndividualsResultsHorizotal(r + 1, rules, i.getFitness());
+            
+            //Check for fittest individual
+            nFitRules = ga.countFitRules(rules);     
+            if(i.getFitness() > bestFitness 
+                    || (i.getFitness() == bestFitness 
+                    && nFitRules < bestNFitRules)){
+                bestIndiv = i;
+                bestIndivID = r + 1;
+                bestNFitRules = nFitRules;
+                bestFitness = i.getFitness();
+            }
+            
             outputPercComplete(r, N_RUNS);
         }
+        
+        //Write fittest individual out of all runs
+        rules = chromosomeToRules(bestIndiv.getChromosome(), conditionSize);
+        writeIndividualsResultsVertical(bestIndivID, rules, bestIndiv.getFitness());
 
         System.out.println("Test complete");
         pw.close();
@@ -407,7 +431,7 @@ public class GARuleMiner {
         sb.append(String.valueOf(nGens));
         sb.append('\n');
         sb.append("Probability of Mutation = ");
-        sb.append(String.valueOf((double) 1 / popSize));
+        sb.append(String.valueOf(mutationRate));
         sb.append('\n');
         sb.append('\n');
         sb.append("Id");
@@ -584,7 +608,7 @@ public class GARuleMiner {
         pw.write(sb.toString());
     }
 
-    private static void writeIndividualsResults(int id, ArrayList<Rule> rules, int fitness) {
+    private static void writeIndividualsResultsHorizotal(int id, ArrayList<Rule> rules, int fitness) {
         Rule rule;
         RuleMiner rm = new RuleMiner(data);
         int[] ruleFitnesses = rm.calcRuleFitness(rules);
@@ -601,6 +625,45 @@ public class GARuleMiner {
             sb.append(String.valueOf(ruleFitnesses[r]));
             sb.append(',');
         }
+        sb.append(String.valueOf(fitness));
+        sb.append('\n');
+        pw.write(sb.toString());
+    }
+    
+    private static void writeIndividualsResultsVertical(int id, ArrayList<Rule> rules, int fitness) {
+        Rule rule;
+        RuleMiner rm = new RuleMiner(data);
+        int[] ruleFitnesses = rm.calcRuleFitness(rules);
+        int ruleFitness, nFitRules = 0;
+        
+        StringBuilder sb = new StringBuilder();
+        sb.append('\n');
+        sb.append("ID");
+        sb.append(',');
+        sb.append(String.valueOf(id));
+        sb.append('\n');
+        sb.append("Rule");
+        sb.append(',');
+        sb.append("Fitness Awarded");
+        sb.append('\n');
+        for (int r = 0; r < rules.size(); r++) {
+            rule = rules.get(r);
+            ruleFitness = ruleFitnesses[r];
+            
+            if(ruleFitness > 0){
+                sb.append(String.valueOf(rule.getCharArr()));
+                sb.append(' ');
+                sb.append(String.valueOf(rule.getOutput()));
+                sb.append(',');
+                sb.append(String.valueOf(ruleFitness));
+                sb.append('\n');
+                
+                nFitRules++;
+            }
+        }
+        sb.append('\n');
+        sb.append(String.valueOf(nFitRules));
+        sb.append(',');
         sb.append(String.valueOf(fitness));
         sb.append('\n');
         pw.write(sb.toString());

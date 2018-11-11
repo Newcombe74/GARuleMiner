@@ -15,7 +15,6 @@ import java.io.FileNotFoundException;
 import geneticalgorithm.*;
 import java.io.PrintWriter;
 
-
 /**
  *
  * @author c2-newcombe
@@ -26,22 +25,22 @@ public class GARuleMiner {
     private static final int POP_SIZE_MIN = 100,
             POP_SIZE_MAX = 1000,
             POP_SIZE_RES_STEP = 10,
-            N_GENS_MIN = 10,
+            N_GENS_MIN = 1,
             N_GENS_MAX = 100,
             N_GENS_RES_STEP = 1,
-            N_RUNS = 10,
-            N_RULES_MIN = 10,
+            N_RUNS = 50,
+            N_RULES_MIN = 1,
             N_RULES_MAX = 100,
             N_RULES_RES_STEP = 1,
             MUT_RES = 100;
     //Population
     private static int[] popSizeVariations;
     private static int popSizeIdx = 0;
-    private static int popSize = POP_SIZE_MIN;
+    private static int popSize = 100;
     //Generations
     private static int[] nGensVariations;
     private static int nGensIdx = 0;
-    private static int nGens = popSize / 2;
+    private static int nGens = 50;
     //Mutation
     private static double[] mutationRateVariations;
     private static int mutationRateIdx = 0;
@@ -50,7 +49,7 @@ public class GARuleMiner {
     private static int[] nRulesVariations;
     private static int nRulesIdx = 0;
     private static int chromSize = 0;
-    private static int nRules = N_RULES_MIN;
+    private static int nRules = 10;
 
     //Test Option Indexes
     private static final int TEST_MUT = 1,
@@ -67,7 +66,7 @@ public class GARuleMiner {
     //Results
     private static double[][] runResults = new double[4][N_RUNS];
     private static PrintWriter pw;
-    private static int percComplete = 10;
+    private static int percComplete = 1;
 
     /**
      * @param args the command line arguments
@@ -119,6 +118,7 @@ public class GARuleMiner {
 
             switch (selectedDataOption) {
                 case 1:
+                    System.out.println("Starting binary rule mining");
                     runBinaryRuleMining();
                     inputValid = true;
                     break;
@@ -131,10 +131,10 @@ public class GARuleMiner {
             }
         }
     }
-    
-    private static void getUserTestHyperparamsChoice() throws FileNotFoundException{
+
+    private static void getUserTestHyperparamsChoice() throws FileNotFoundException {
         Scanner scanner = new Scanner(System.in);
-        
+
         boolean inputValid = false;
         while (!inputValid) {
             System.out.println("Please enter the number of the test you wish to run:");
@@ -274,7 +274,7 @@ public class GARuleMiner {
         RuleMiner ga = new RuleMiner(popSize, nGens, data, nRules);
         ArrayList<Rule> rules;
         int conditionSize = ga.getConditionSize();
-        
+
         initFittestCSV("FittestIndividualsResults.csv");
 
         for (int r = 0; r < N_RUNS; r++) {
@@ -284,10 +284,7 @@ public class GARuleMiner {
             rules = chromosomeToRules(i.getChromosome(), conditionSize);
             writeIndividualsResults(r + 1, rules, i.getFitness());
 
-            if (calcPerc(r, N_RUNS) > percComplete) {
-                System.out.println("Test " + percComplete + "% complete");
-                percComplete += 10;
-            }
+            outputPercComplete(r, N_RUNS);
         }
 
         System.out.println("Test complete");
@@ -318,10 +315,7 @@ public class GARuleMiner {
             }
             writeResults(m + 1, mutationRateVariations[m]);
 
-            if (calcPerc(m, MUT_RES) > percComplete) {
-                System.out.println("Test " + percComplete + "% complete");
-                percComplete += 10;
-            }
+            outputPercComplete(m, mutationRateVariations.length);
         }
 
         System.out.println("Test complete");
@@ -346,10 +340,7 @@ public class GARuleMiner {
             }
             writeResults(p + 1, popSizeVariations[p]);
 
-            if (calcPerc(p, popSizeVariations.length) > percComplete) {
-                System.out.println("Test " + percComplete + "% complete");
-                percComplete += 10;
-            }
+            outputPercComplete(p, popSizeVariations.length);
         }
 
         System.out.println("Test complete");
@@ -357,25 +348,22 @@ public class GARuleMiner {
     }
 
     private static void runNGensVarianceTest() throws FileNotFoundException {
-
-        RuleMiner ga = new RuleMiner(popSize, N_GENS_MIN, data, N_RULES_MIN);
+        RuleMiner ga = new RuleMiner(popSize, N_GENS_MIN, data, nRules);
         chromSize = ga.getChromosomeSize();
         initGenerationsCSV("NoOfGenerationsVarianceResults.csv");
 
         for (int g = 0; g < nGensVariations.length; g++) {
             for (int r = 0; r < N_RUNS; r++) {
                 ga.setNumberOfGenerations(nGensVariations[g]);
-
+                nGens = nGensVariations[g];
+                
                 ga.run(GeneticAlgorithm.SELECTION_TOURNEMENT);
 
                 recordResults(ga, r);
             }
             writeResults(g + 1, nGensVariations[g]);
 
-            if (calcPerc(g, nGensVariations.length) > percComplete) {
-                System.out.println("Test " + percComplete + "% complete");
-                percComplete += 10;
-            }
+            outputPercComplete(g, nGensVariations.length);
         }
 
         System.out.println("Test complete");
@@ -397,10 +385,7 @@ public class GARuleMiner {
             }
             writeResults(n + 1, nRulesVariations[n]);
 
-            if (calcPerc(n, nRulesVariations.length) > percComplete) {
-                System.out.println("Test " + percComplete + "% complete");
-                percComplete += 10;
-            }
+            outputPercComplete(n, nRulesVariations.length);
         }
 
         System.out.println("Test complete");
@@ -408,10 +393,10 @@ public class GARuleMiner {
     }
 
     private static void recordResults(RuleMiner ga, int r) {
-        runResults[RuleMiner.RESULT_BEST][r] = ga.getResult(N_GENS_MIN, RuleMiner.RESULT_BEST);
-        runResults[RuleMiner.RESULT_WORST][r] = ga.getResult(N_GENS_MIN, RuleMiner.RESULT_WORST);
-        runResults[RuleMiner.RESULT_AVERAGE][r] = ga.getResult(N_GENS_MIN, RuleMiner.RESULT_AVERAGE);
-        runResults[RuleMiner.RESULT_SUM][r] = ga.getResult(N_GENS_MIN, RuleMiner.RESULT_SUM);
+        runResults[RuleMiner.RESULT_BEST][r] = ga.getResult(nGens, RuleMiner.RESULT_BEST);
+        runResults[RuleMiner.RESULT_WORST][r] = ga.getResult(nGens, RuleMiner.RESULT_WORST);
+        runResults[RuleMiner.RESULT_AVERAGE][r] = ga.getResult(nGens, RuleMiner.RESULT_AVERAGE);
+        runResults[RuleMiner.RESULT_SUM][r] = ga.getResult(nGens, RuleMiner.RESULT_SUM);
     }
     //END_TESTS
 
@@ -471,6 +456,8 @@ public class GARuleMiner {
         sb.append(',');
         sb.append("Avg Worst Fitness");
         sb.append(',');
+        sb.append("Avg Fitness Range");
+        sb.append(',');
         sb.append("Avg Avg Fitness");
         sb.append(',');
         sb.append("Avg Total Fitness");
@@ -502,6 +489,8 @@ public class GARuleMiner {
         sb.append(',');
         sb.append("Avg Worst Fitness");
         sb.append(',');
+        sb.append("Avg Fitness Range");
+        sb.append(',');
         sb.append("Avg Avg Fitness");
         sb.append(',');
         sb.append("Avg Total Fitness");
@@ -513,7 +502,7 @@ public class GARuleMiner {
         pw = new PrintWriter(new File(name));
         StringBuilder sb = new StringBuilder();
         sb.append("Population Size = ");
-        sb.append(String.valueOf(POP_SIZE_MIN));
+        sb.append(String.valueOf(popSize));
         sb.append('\n');
         sb.append("Chromosome Size = ");
         sb.append(String.valueOf(chromSize));
@@ -522,10 +511,10 @@ public class GARuleMiner {
         sb.append(String.valueOf(N_RUNS));
         sb.append('\n');
         sb.append("No of Rules = ");
-        sb.append(String.valueOf(N_RULES_MIN));
+        sb.append(String.valueOf(nRules));
         sb.append('\n');
         sb.append("Probability of Mutation = ");
-        sb.append(String.valueOf((double) 1 / popSize));
+        sb.append(String.valueOf(mutationRate));
         sb.append('\n');
         sb.append('\n');
         sb.append("Id");
@@ -535,6 +524,8 @@ public class GARuleMiner {
         sb.append("Avg Best Fitness");
         sb.append(',');
         sb.append("Avg Worst Fitness");
+        sb.append(',');
+        sb.append("Avg Fitness Range");
         sb.append(',');
         sb.append("Avg Avg Fitness");
         sb.append(',');
@@ -567,6 +558,8 @@ public class GARuleMiner {
         sb.append(',');
         sb.append("Avg Worst Fitness");
         sb.append(',');
+        sb.append("Avg Fitness Range");
+        sb.append(',');
         sb.append("Avg Avg Fitness");
         sb.append(',');
         sb.append("Avg Total Fitness");
@@ -576,17 +569,21 @@ public class GARuleMiner {
 
     private static void writeResults(int id, double rate) {
         StringBuilder sb = new StringBuilder();
+        double best = calcAvg(runResults[RuleMiner.RESULT_BEST]), 
+                worst = calcAvg(runResults[RuleMiner.RESULT_WORST]);
         sb.append(id);
         sb.append(',');
-        sb.append(rate);
+        sb.append(String.valueOf(rate));
         sb.append(',');
-        sb.append(calcAvg(runResults[RuleMiner.RESULT_BEST]));
+        sb.append(String.valueOf(best));
         sb.append(',');
-        sb.append(calcAvg(runResults[RuleMiner.RESULT_WORST]));
+        sb.append(String.valueOf(worst));
         sb.append(',');
-        sb.append(calcAvg(runResults[RuleMiner.RESULT_AVERAGE]));
+        sb.append(String.valueOf((best - worst)));
         sb.append(',');
-        sb.append(calcAvg(runResults[RuleMiner.RESULT_SUM]));
+        sb.append(String.valueOf(calcAvg(runResults[RuleMiner.RESULT_AVERAGE])));
+        sb.append(',');
+        sb.append(String.valueOf(calcAvg(runResults[RuleMiner.RESULT_SUM])));
         sb.append('\n');
         pw.write(sb.toString());
     }
@@ -595,7 +592,7 @@ public class GARuleMiner {
         Rule rule;
         RuleMiner rm = new RuleMiner(data);
         int[] ruleFitnesses = rm.calcRuleFitness(rules);
-        
+
         StringBuilder sb = new StringBuilder();
         sb.append(String.valueOf(id));
         sb.append(',');
@@ -615,12 +612,18 @@ public class GARuleMiner {
     //END_CSV
 
     //START_Utils
-    
+    private static void outputPercComplete(double a, double b) {
+        if (calcPerc(a, b) > percComplete) {
+            System.out.println("Test " + percComplete + "% complete");
+            percComplete++;
+        }
+    }
+
     private static ArrayList<Rule> chromosomeToRules(Object[] oGenes, int conditionSize) {
         ArrayList<Rule> ret = new ArrayList<>();
         int k = 0;
         Character[] genes = new Character[oGenes.length];
-        
+
         for (int g = 0; g < genes.length; g++) {
             genes[g] = (Character) oGenes[g];
         }
@@ -637,7 +640,7 @@ public class GARuleMiner {
 
         return ret;
     }
-    
+
     private static double calcAvg(double[] arr) {
         if (arr.length == 0) {
             return 0;

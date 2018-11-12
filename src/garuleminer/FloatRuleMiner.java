@@ -5,94 +5,88 @@
  */
 package garuleminer;
 
-import geneticalgorithm.*;
+import geneticalgorithm.Individual;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Random;
 
 /**
  *
- * @author c2-newcombe
+ * @author Conor
  */
-public class RuleMiner extends GeneticAlgorithm {
-
-    protected Rule[] dataRules;
-
-    protected int nRules, conditionSize;
-
-    public RuleMiner(Rule[] ruleBase) {
-        this.dataRules = ruleBase;
+public class FloatRuleMiner extends RuleMiner {
+    
+    //Holdout
+    protected Rule[] tDataRuleSet, vDataRuleSet;
+    //k-fold
+    protected Rule[][] kDataRuleSets;
+    
+    public FloatRuleMiner(Rule[] ruleBase) {
+        super(ruleBase);
     }
 
-    public RuleMiner(int populationSize, int numberOfGenerations,
+    public FloatRuleMiner(int populationSize, int numberOfGenerations,
             Rule[] ruleBase, int nRules) {
-        super.populationSize = populationSize;
-        super.numberOfGenerations = numberOfGenerations;
-        super.probabilityOfMutation = (float) 1 / super.populationSize;
-        super.results = new float[super.numberOfGenerations][4];
-        this.dataRules = ruleBase;
-        this.nRules = nRules;
-        this.conditionSize = calcConditionSize();
-        super.chromosomeSize = calcChromSize();
+        super(populationSize, numberOfGenerations, ruleBase, nRules);
     }
 
-    public RuleMiner(int populationSize, int numberOfGenerations,
+    public FloatRuleMiner(int populationSize, int numberOfGenerations,
             double probabilityOfMutation,
             Rule[] ruleBase, int nRules) {
-        super.populationSize = populationSize;
-        super.numberOfGenerations = numberOfGenerations;
-        super.chromosomeSize = chromosomeSize;
-        super.probabilityOfMutation = probabilityOfMutation;
-        super.results = new float[super.numberOfGenerations][4];
-        this.dataRules = ruleBase;
-        this.nRules = nRules;
-        this.conditionSize = calcConditionSize();
-        super.chromosomeSize = calcChromSize();
-    }
-
-    private int calcConditionSize() {
-        if (this.dataRules != null && this.dataRules[0] != null) {
-            if (this.dataRules[0].getCharArr() != null) {
-                return this.dataRules[0].getCharArr().length;
-            } else if (this.dataRules[0].getRealNumArr() != null) {
-                return this.dataRules[0].getRealNumArr().length;
-            }
-        }
-        return 0;
-    }
-
-    private int calcChromSize() {
-        return (this.conditionSize + 1) * this.nRules;
+        super(populationSize, numberOfGenerations, probabilityOfMutation,
+                ruleBase, nRules);
     }
 
     @Override
     protected void initChromosomes() {
         for (int i = 0; i < super.population.length; i++) {
             Object[] chrom = new Object[this.chromosomeSize];
-            int condBound = 0;
-            int[] intArray;
+            int condBound = 0, idx;
+            float[] intArray;
 
             for (int j = 0; j < chrom.length; j++) {
                 if (this.conditionSize == condBound++) {
-                    intArray = new int[]{'1', '0'};
+                    intArray = new float[]{(float) 1.0, (float) 0.0};
                     condBound = 0;
+                    idx = new Random().nextInt(intArray.length);
+                    chrom[j] = (float) intArray[idx];
                 } else {
-                    intArray = new int[]{'1', '0', '#'};
+                    chrom[j] = (float) round(new Random().nextFloat(), 6);
                 }
-
-                int idx = new Random().nextInt(intArray.length);
-
-                chrom[j] = (char) intArray[idx];
             }
             super.population[i] = new Individual(chrom);
         }
     }
 
     @Override
+    protected Individual[] crossover() {
+        //TODO Blending
+        
+        ArrayList<Individual> children = new ArrayList<>();
+
+        for (int i = 0; i < populationSize - 1; i++) {
+            children.addAll(singlePointCrossover(
+                    population[i].getChromosome(),
+                    population[(i + 1)].getChromosome()));
+        }
+
+        Individual[] ret = new Individual[children.size()];
+
+        for (int i = 0; i < ret.length; i++) {
+            ret[i] = children.get(i);
+        }
+        return ret;
+    }
+    
+    @Override
     protected Object[] mutateChromosome(Object[] chrom) {
         Object[] mutatedGenes = chrom;
         int condBound = 0;
         boolean outputGene;
 
+        //TODO Creep
+        //TODO Normal Distribution
+        
         for (int i = 0; i < chrom.length; i++) {
             double m = Math.random();
             if (this.conditionSize == condBound) {
@@ -144,38 +138,6 @@ public class RuleMiner extends GeneticAlgorithm {
     }
 
     @Override
-    protected ArrayList<Individual> singlePointCrossover(Object[] parent1, Object[] parent2) {
-        ArrayList<Individual> children = new ArrayList<>();
-        Object[][] crossoverGenes = new Object[2][super.chromosomeSize];
-        final int child1 = 0, child2 = 1;
-        int geneCounter = 0, ruleCounter = 0, ruleSize = this.conditionSize + 1;
-        int crossoverPoint = new Random().nextInt(
-                (super.chromosomeSize / this.nRules) - 1) + 1;
-
-        for (int i = 0; i < super.chromosomeSize; i++) {
-            if (geneCounter == ruleSize) {
-                ruleCounter++;
-                geneCounter = 0;
-            }
-
-            if (ruleCounter < crossoverPoint) {
-                crossoverGenes[child1][i] = parent1[i];
-                crossoverGenes[child2][i] = parent2[i];
-            } else {
-                crossoverGenes[child1][i] = parent2[i];
-                crossoverGenes[child2][i] = parent1[i];
-            }
-
-            geneCounter++;
-        }
-
-        children.add(new Individual(crossoverGenes[child1]));
-        children.add(new Individual(crossoverGenes[child2]));
-
-        return children;
-    }
-
-    @Override
     protected Individual[] calcFitness(Individual[] pop) {
         Individual[] ret = new Individual[pop.length];
 
@@ -200,44 +162,7 @@ public class RuleMiner extends GeneticAlgorithm {
         return ret;
     }
 
-    public int[] calcRuleFitness(ArrayList<Rule> indivRuleBase) {
-        int ruleIdx;
-        
-        int[] ruleFitnesses = new int[indivRuleBase.size()];
-        for (int i = 0; i < ruleFitnesses.length; i++) {
-            ruleFitnesses[i] = 0;
-        }
-
-        for (Rule dataRule : dataRules) {
-            ruleIdx = 0;
-            for (Rule indivRule : indivRuleBase) {
-                //IF condition matches
-                if (evaluateConditionMatch(indivRule, dataRule)) {
-                    //IF output matches
-                    if (indivRule.getOutput() == dataRule.getOutput()) {
-                        ruleFitnesses[ruleIdx]++;
-                    }
-                    break;
-                }
-                ruleIdx++;
-            }
-        }
-        return ruleFitnesses;
-    }
-
-    public int countFitRules(ArrayList<Rule> indivRuleBase) {
-        int nFitRules = 0;
-        
-        int[] ruleFitnesses = calcRuleFitness(indivRuleBase);
-        
-        for(int fitness : ruleFitnesses){
-            if(fitness > 0){
-                nFitRules++;
-            }
-        }
-        return nFitRules;
-    }
-    
+    @Override
     public ArrayList<Rule> chromosomeToRules(Object[] oGenes) {
         ArrayList<Rule> ret = new ArrayList<>();
         int k = 0;
@@ -260,6 +185,7 @@ public class RuleMiner extends GeneticAlgorithm {
         return ret;
     }
 
+    @Override
     protected boolean evaluateConditionMatch(Rule b, Rule d) {
         char[] cond1 = b.getCharArr(), cond2 = d.getCharArr();
 
@@ -274,14 +200,11 @@ public class RuleMiner extends GeneticAlgorithm {
         return true;
     }
 
-    public void setNRules(int nRules) {
-        this.nRules = nRules;
-        this.conditionSize = calcConditionSize();
-        super.chromosomeSize = calcChromSize();
+    //START UTILS
+    public static float round(float d, int decimalPlace) {
+        BigDecimal bd = new BigDecimal(Float.toString(d));
+        bd = bd.setScale(decimalPlace, BigDecimal.ROUND_HALF_UP);
+        return bd.floatValue();
     }
-
-    public int getConditionSize() {
-        return conditionSize;
-    }
-
+    //END_UTILS
 }

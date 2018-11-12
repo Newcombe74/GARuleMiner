@@ -50,7 +50,7 @@ public class GARuleMiner {
     private static int[] nRulesVariations;
     private static int nRulesIdx = 0;
     private static int chromSize = 0;
-    private static int nRules = 40;
+    private static int nRules = 10;
 
     //Test Option Indexes
     private static final int TEST_MUT = 1,
@@ -119,8 +119,12 @@ public class GARuleMiner {
 
             switch (selectedDataOption) {
                 case 1:
-                    System.out.println("Starting binary rule mining");
-                    runBinaryRuleMining();
+                    System.out.println("Starting rule mining");
+                    if(data[0].getDataType() == DATA_TYPE_FLOAT){
+                        runRuleMining(new FloatRuleMiner(popSize, nGens, data, nRules));
+                    }else{
+                        runRuleMining(new RuleMiner(popSize, nGens, data, nRules));
+                    }
                     inputValid = true;
                     break;
                 case 2:
@@ -270,9 +274,9 @@ public class GARuleMiner {
     //END_INITIALISERS
 
     //START_MINING
-    private static void runBinaryRuleMining() throws FileNotFoundException {
+    private static void runRuleMining(RuleMiner ga) throws FileNotFoundException {
 
-        RuleMiner ga = new RuleMiner(popSize, nGens, data, nRules);
+        //RuleMiner ga = new RuleMiner(popSize, nGens, data, nRules);
         Individual bestIndiv = new Individual();
         ArrayList<Rule> rules;
         int conditionSize = ga.getConditionSize(),

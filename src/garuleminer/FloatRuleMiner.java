@@ -15,12 +15,29 @@ import java.util.Random;
  * @author Conor
  */
 public class FloatRuleMiner extends RuleMiner {
-    
+
+    //Validation
+    private final int VALID_NONE = 1, VALID_HOLD = 2, VALID_K_FOLD = 3;
+    private int holdTrainDist = 80, kFolds = 5;
+    //Crossover
+    private final int CROSS_REG = 1, CROSS_BLEND_GENE = 2,
+            CROSS_BLEND_RULE = 3, CROSS_BLEND_CANON = 4;
+    //Mutation
+    private final int MUT_CREEP = 1, MUT_NORM_DIST = 2;
+    private float mutCreepTol = (float) 0.1;
+    //Gene Types
+    private final int GENE_COND = 1, GENE_OUT = 2, GENE_TOL = 3;
+
+    //Method Variations
+    private int validationMethod = VALID_NONE,
+            mutationMethod = MUT_CREEP,
+            crossoverMethod = CROSS_REG;
+
     //Holdout
     protected Rule[] tDataRuleSet, vDataRuleSet;
     //k-fold
     protected Rule[][] kDataRuleSets;
-    
+
     public FloatRuleMiner(Rule[] ruleBase) {
         super(ruleBase);
     }
@@ -41,27 +58,55 @@ public class FloatRuleMiner extends RuleMiner {
     protected void initChromosomes() {
         for (int i = 0; i < super.population.length; i++) {
             Object[] chrom = new Object[this.chromosomeSize];
-            int condBound = 0, idx;
+            int idx, chromPos = 0;
             float[] intArray;
 
-            for (int j = 0; j < chrom.length; j++) {
-                if (this.conditionSize == condBound++) {
-                    intArray = new float[]{(float) 1.0, (float) 0.0};
-                    condBound = 0;
-                    idx = new Random().nextInt(intArray.length);
-                    chrom[j] = (float) intArray[idx];
-                } else {
-                    chrom[j] = (float) round(new Random().nextFloat(), 6);
+            for (int r = 0; r < super.nRules; r++) {
+
+                //Condition genes
+                for (int c = 0; c < this.conditionSize; c++) {
+                    chrom[chromPos + c] = (float) round(new Random().nextFloat(), 6);
                 }
+
+                //Output gene
+                intArray = new float[]{(float) 1.0, (float) 0.0};
+                idx = new Random().nextInt(intArray.length);
+                chrom[chromPos + this.conditionSize] = (float) intArray[idx];
+
+                //Tolerance gene
+                chrom[chromPos + this.conditionSize + 1]
+                        = (float) round(new Random().nextFloat(), 6);
+
+                chromPos += this.conditionSize + 2;
             }
             super.population[i] = new Individual(chrom);
         }
     }
 
+    //START_CROSSOVER
     @Override
     protected Individual[] crossover() {
-        //TODO Blending
-        
+        switch (this.crossoverMethod) {
+            case CROSS_REG:
+                //Crossover canonically
+                return crossoverRules();
+            case CROSS_BLEND_GENE:
+                //TODO Blending single gene
+                return null;
+            case CROSS_BLEND_RULE:
+                //TODO Blending single rule
+                return null;
+            case CROSS_BLEND_CANON:
+                //TODO Blending canonical cross
+                return null;
+            default:
+                System.err.println("Crossover method: "
+                        + this.crossoverMethod + " not found");
+                return null;
+        }
+    }
+    
+    private Individual[] crossoverRules(){
         ArrayList<Individual> children = new ArrayList<>();
 
         for (int i = 0; i < populationSize - 1; i++) {
@@ -77,65 +122,67 @@ public class FloatRuleMiner extends RuleMiner {
         }
         return ret;
     }
+    //END_CROSSOVER
     
+    //START_MUTATION
     @Override
     protected Object[] mutateChromosome(Object[] chrom) {
+        switch (this.mutationMethod) {
+            case MUT_CREEP:
+                //Creep
+                return mutateCreep(chrom);
+            case MUT_NORM_DIST:
+                //TODO Normal Distribution
+                return null;
+            default:
+                System.err.println("Mutation method: "
+                        + this.mutationMethod + " not found");
+                return null;
+        }
+    }
+    
+    private Object[] mutateCreep(Object[] chrom){
         Object[] mutatedGenes = chrom;
         int condBound = 0;
-        boolean outputGene;
+        int geneType;
 
-        //TODO Creep
-        //TODO Normal Distribution
-        
         for (int i = 0; i < chrom.length; i++) {
             double m = Math.random();
             if (this.conditionSize == condBound) {
-                outputGene = true;
-                condBound = 0;
-            } else {
-                outputGene = false;
+                geneType = GENE_OUT;
                 condBound++;
+            } else if ((this.conditionSize + 1) == condBound){
+                geneType = GENE_TOL;
+                condBound++;
+            }else{
+                geneType = GENE_COND;
+                condBound = 0;
             }
+            
             if (super.probabilityOfMutation >= m) {
-                int[] intArray;
-                int idx;
-                char gene = (Character) mutatedGenes[i];
-
-                switch (gene) {
-                    case '1':
-                        if (outputGene) {
-                            mutatedGenes[i] = '0';
-                        } else {
-                            intArray = new int[]{'0', '#'};
-                            idx = new Random().nextInt(intArray.length);
-                            mutatedGenes[i] = (char) intArray[idx];
-                        }
-                        break;
-                    case '0':
-                        if (outputGene) {
-                            mutatedGenes[i] = '1';
-                        } else {
-                            intArray = new int[]{'1', '#'};
-                            idx = new Random().nextInt(intArray.length);
-                            mutatedGenes[i] = (char) intArray[idx];
-                        }
-                        break;
-                    case '#':
-                        intArray = new int[]{'0', '1'};
-                        idx = new Random().nextInt(intArray.length);
-                        mutatedGenes[i] = (char) intArray[idx];
-                        break;
-                    default:
-                        intArray = new int[]{'0', '1', '#'};
-                        idx = new Random().nextInt(intArray.length);
-                        mutatedGenes[i] = (char) intArray[idx];
-                        break;
+                float mutChange;
+                float upOrDown;
+                
+                if(geneType == GENE_COND || geneType == GENE_TOL){
+                    mutChange = new Random().nextFloat() * this.mutCreepTol;
+                    upOrDown = new Random().nextFloat();
+                    
+                    if(upOrDown >= 0.5){
+                        //Add mutChange
+                        mutatedGenes[i] = ((float) mutatedGenes[i] + mutChange);
+                    }else{
+                        //Minus mutChange
+                        mutatedGenes[i] = ((float) mutatedGenes[i] - mutChange);
+                    }
+                }else{
+                    mutatedGenes[i] = flipBinaryFloat(mutatedGenes[i]);
                 }
             }
         }
 
         return mutatedGenes;
     }
+    //END_MUTATION
 
     @Override
     protected Individual[] calcFitness(Individual[] pop) {
@@ -166,35 +213,39 @@ public class FloatRuleMiner extends RuleMiner {
     public ArrayList<Rule> chromosomeToRules(Object[] oGenes) {
         ArrayList<Rule> ret = new ArrayList<>();
         int k = 0;
-        Character[] genes = new Character[oGenes.length];
+        Float[] genes = new Float[oGenes.length];
 
         for (int g = 0; g < genes.length; g++) {
-            genes[g] = (Character) oGenes[g];
+            genes[g] = (Float) oGenes[g];
         }
 
         for (int r = 0; r < this.nRules; r++) {
-            char[] cond = new char[this.conditionSize];
+            float[] cond = new float[this.conditionSize];
 
             for (int c = 0; c < this.conditionSize; c++) {
                 cond[c] = genes[k++];
             }
-            ret.add(new Rule((char[]) cond,
-                    Character.getNumericValue(genes[k++]), Rule.DATA_TYPE_BINARY));
+            ret.add(new Rule((float[]) cond, (int) genes[k++].floatValue(),
+                    genes[k++], Rule.DATA_TYPE_FLOAT));
         }
 
         return ret;
     }
 
     @Override
-    protected boolean evaluateConditionMatch(Rule b, Rule d) {
-        char[] cond1 = b.getCharArr(), cond2 = d.getCharArr();
+    protected boolean evaluateConditionMatch(Rule indivRule, Rule datasetRule) {
+        float[] indivCond = indivRule.getRealNumArr(),
+                datasetCond = datasetRule.getRealNumArr();
+        float tolerance = indivRule.getTolerance();
+        float min, max;
 
-        for (int c = 0; c < cond1.length; c++) {
-            if (cond1[c] == '#' || cond2[c] == '#') {
-                continue;
-            }
-            if (!(cond1[c] == cond2[c])) {
-                return false;
+        for (int c = 0; c < indivCond.length; c++) {
+            min = indivCond[c] - tolerance;
+            max = indivCond[c] + tolerance;
+            
+            if (!((datasetCond[c] >= min) 
+                    && (datasetCond[c] <= max))) {
+                 return false;
             }
         }
         return true;
@@ -206,5 +257,86 @@ public class FloatRuleMiner extends RuleMiner {
         bd = bd.setScale(decimalPlace, BigDecimal.ROUND_HALF_UP);
         return bd.floatValue();
     }
+    
+    private float flipBinaryFloat(Object gene) {
+        if ((int) gene == 1) {
+            return (float) 0.0;
+        } else {
+            return (float) 1.0;
+        }
+    }
     //END_UTILS
+
+    public int getHoldTrainDist() {
+        return holdTrainDist;
+    }
+
+    public void setHoldTrainDist(int holdTrainDist) {
+        this.holdTrainDist = holdTrainDist;
+    }
+
+    public int getkFolds() {
+        return kFolds;
+    }
+
+    public void setkFolds(int kFolds) {
+        this.kFolds = kFolds;
+    }
+
+    public float getMutTolerence() {
+        return mutCreepTol;
+    }
+
+    public void setMutTolerence(float mutCreepTol) {
+        this.mutCreepTol = mutCreepTol;
+    }
+
+    public int getValidationMethod() {
+        return validationMethod;
+    }
+
+    public void setValidationMethod(int validationMethod) {
+        this.validationMethod = validationMethod;
+    }
+
+    public int getMutationMethod() {
+        return mutationMethod;
+    }
+
+    public void setMutationMethod(int mutationMethod) {
+        this.mutationMethod = mutationMethod;
+    }
+
+    public int getCrossoverMethod() {
+        return crossoverMethod;
+    }
+
+    public void setCrossoverMethod(int crossoverMethod) {
+        this.crossoverMethod = crossoverMethod;
+    }
+
+    public Rule[] gettDataRuleSet() {
+        return tDataRuleSet;
+    }
+
+    public void settDataRuleSet(Rule[] tDataRuleSet) {
+        this.tDataRuleSet = tDataRuleSet;
+    }
+
+    public Rule[] getvDataRuleSet() {
+        return vDataRuleSet;
+    }
+
+    public void setvDataRuleSet(Rule[] vDataRuleSet) {
+        this.vDataRuleSet = vDataRuleSet;
+    }
+
+    public Rule[][] getkDataRuleSets() {
+        return kDataRuleSets;
+    }
+
+    public void setkDataRuleSets(Rule[][] kDataRuleSets) {
+        this.kDataRuleSets = kDataRuleSets;
+    }
+
 }

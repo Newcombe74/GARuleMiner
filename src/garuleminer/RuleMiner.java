@@ -61,7 +61,15 @@ public class RuleMiner extends GeneticAlgorithm {
     }
 
     private int calcChromSize() {
-        return (this.conditionSize + 1) * this.nRules;
+        if (this.dataRules != null && this.dataRules[0] != null) {
+            if (this.dataRules[0].getCharArr() != null) {
+                return (this.conditionSize + 1) * this.nRules;
+            } else if (this.dataRules[0].getRealNumArr() != null) {
+                return (this.conditionSize + 2) * this.nRules;
+            }
+        }
+        return 0;
+        
     }
 
     @Override

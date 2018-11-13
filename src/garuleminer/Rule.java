@@ -15,6 +15,7 @@ public class Rule {
     private char[] charArr;
     private float[] realNumArr;
     private final int output, dataType;
+    private float tolerance;
     
     public Rule(String input, int output, int dataType){
         this.output = output;
@@ -23,9 +24,16 @@ public class Rule {
     }
     
     public Rule(char[] input, int output, int dataType){
+        this.charArr = input;
         this.output = output;
         this.dataType = dataType;
-        charArr = input;
+    }
+    
+    public Rule(float[] input, int output, float tolerance, int dataType){
+        this.realNumArr = input;
+        this.output = output;
+        this.tolerance = tolerance;
+        this.dataType = dataType;
     }
     
     private void resolveInput(String input){
@@ -96,4 +104,14 @@ public class Rule {
     public int getDataType() {
         return dataType;
     }
+
+    public float getTolerance() {
+        return tolerance;
+    }
+
+    public void setTolerance(float tolerance) {
+        this.tolerance = tolerance;
+    }
+    
+    
 }

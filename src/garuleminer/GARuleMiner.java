@@ -28,19 +28,19 @@ public class GARuleMiner {
             N_GENS_MIN = 1,
             N_GENS_MAX = 100,
             N_GENS_RES_STEP = 1,
-            N_RUNS = 20,
+            N_RUNS = 10,
             N_RULES_MIN = 1,
             N_RULES_MAX = 100,
             N_RULES_RES_STEP = 1,
-            MUT_RES = 100;
+            MUT_RES = 50;
     //Population
     private static int[] popSizeVariations;
     private static int popSizeIdx = 0;
-    private static int popSize = 1000;
+    private static int popSize = 100;
     //Generations
     private static int[] nGensVariations;
     private static int nGensIdx = 0;
-    private static int nGens = 100;
+    private static int nGens = 50;
     //Mutation
     private static double[] mutationRateVariations;
     private static int mutationRateIdx = 0;
@@ -60,6 +60,7 @@ public class GARuleMiner {
 
     //Imported Data
     private static Rule[] data;
+    private static int dataType;
 
     //User inputs
     private static int selectedDataOption, selectedTestOption;
@@ -94,14 +95,17 @@ public class GARuleMiner {
             switch (selectedDataOption) {
                 case 1:
                     data = readDataFile(1, DATA_TYPE_BINARY);
+                    dataType = Rule.DATA_TYPE_BINARY;
                     inputValid = true;
                     break;
                 case 2:
                     data = readDataFile(2, DATA_TYPE_BINARY);
+                    dataType = DATA_TYPE_BINARY;
                     inputValid = true;
                     break;
                 case 3:
                     data = readDataFile(3, DATA_TYPE_FLOAT);
+                    dataType = DATA_TYPE_FLOAT;
                     inputValid = true;
                     break;
                 default:
@@ -120,9 +124,9 @@ public class GARuleMiner {
             switch (selectedDataOption) {
                 case 1:
                     System.out.println("Starting rule mining");
-                    if(data[0].getDataType() == DATA_TYPE_FLOAT){
+                    if (dataType == DATA_TYPE_FLOAT) {
                         runRuleMining(new FloatRuleMiner(popSize, nGens, data, nRules));
-                    }else{
+                    } else {
                         runRuleMining(new RuleMiner(popSize, nGens, data, nRules));
                     }
                     inputValid = true;
@@ -281,12 +285,12 @@ public class GARuleMiner {
         ArrayList<Rule> rules;
         int conditionSize = ga.getConditionSize(),
                 bestFitness = 0, bestNFitRules = 0, nFitRules, bestIndivID = 0;
-        
+
         //Calculate Mutation Rate
         chromSize = ga.getChromosomeSize();
-        mutationRate = (double) (((double) 1 / popSize) + ((double) 1 / chromSize) / mRateMod); 
+        mutationRate = (double) (((double) 1 / popSize) + ((double) 1 / chromSize) / mRateMod);
         ga.setProbabilityOfMutation(mutationRate);
-        
+
         initFittestCSV("FittestIndividualsResults.csv");
 
         for (int r = 0; r < N_RUNS; r++) {
@@ -294,25 +298,33 @@ public class GARuleMiner {
 
             //Write fittest individual of the current run
             Individual i = ga.getBestIndividual();
-            rules = chromosomeToRules(i.getChromosome(), conditionSize);
+            if (dataType == DATA_TYPE_FLOAT) {
+                rules = chromosomeToFloatRules(i.getChromosome(), conditionSize);
+            } else {
+                rules = chromosomeToCharRules(i.getChromosome(), conditionSize);
+            }
             writeIndividualsResultsHorizotal(r + 1, rules, i.getFitness());
-            
+
             //Check for fittest individual
-            nFitRules = ga.countFitRules(rules);     
-            if(i.getFitness() > bestFitness 
-                    || (i.getFitness() == bestFitness 
-                    && nFitRules < bestNFitRules)){
+            nFitRules = ga.countFitRules(rules);
+            if (i.getFitness() > bestFitness
+                    || (i.getFitness() == bestFitness
+                    && nFitRules < bestNFitRules)) {
                 bestIndiv = i;
                 bestIndivID = r + 1;
                 bestNFitRules = nFitRules;
                 bestFitness = i.getFitness();
             }
-            
+
             outputPercComplete(r, N_RUNS);
         }
-        
+
         //Write fittest individual out of all runs
-        rules = chromosomeToRules(bestIndiv.getChromosome(), conditionSize);
+        if (dataType == DATA_TYPE_FLOAT) {
+            rules = chromosomeToFloatRules(bestIndiv.getChromosome(), conditionSize);
+        } else {
+            rules = chromosomeToCharRules(bestIndiv.getChromosome(), conditionSize);
+        }
         writeIndividualsResultsVertical(bestIndivID, rules, bestIndiv.getFitness());
 
         System.out.println("Test complete");
@@ -323,7 +335,14 @@ public class GARuleMiner {
     //START_TESTS
     private static void runMutationVarianceTest() throws FileNotFoundException {
 
-        RuleMiner ga = new RuleMiner(popSize, nGens, data, nRules);
+        RuleMiner ga;
+        if (dataType == DATA_TYPE_FLOAT) {
+            ga = new FloatRuleMiner(popSize, nGens, data, nRules);
+        } else {
+            ga = new RuleMiner(popSize, nGens, data, nRules);
+        }
+
+        //RuleMiner ga = new RuleMiner(popSize, nGens, data, nRules);
         chromSize = ga.getChromosomeSize();
         initMutationRates(popSize, chromSize);
 
@@ -348,7 +367,13 @@ public class GARuleMiner {
 
     private static void runPopSizeVarianceTest() throws FileNotFoundException {
 
-        RuleMiner ga = new RuleMiner(POP_SIZE_MIN, N_GENS_MIN, data, N_RULES_MIN);
+        RuleMiner ga;
+        if (dataType == DATA_TYPE_FLOAT) {
+            ga = new FloatRuleMiner(popSize, nGens, data, nRules);
+        } else {
+            ga = new RuleMiner(popSize, nGens, data, nRules);
+        }
+        
         chromSize = ga.getChromosomeSize();
         initPopulationsCSV("PopulationSizeVarianceResults.csv");
 
@@ -372,7 +397,13 @@ public class GARuleMiner {
     }
 
     private static void runNGensVarianceTest() throws FileNotFoundException {
-        RuleMiner ga = new RuleMiner(popSize, N_GENS_MIN, data, nRules);
+        RuleMiner ga;
+        if (dataType == DATA_TYPE_FLOAT) {
+            ga = new FloatRuleMiner(popSize, nGens, data, nRules);
+        } else {
+            ga = new RuleMiner(popSize, nGens, data, nRules);
+        }
+        
         chromSize = ga.getChromosomeSize();
         initGenerationsCSV("NoOfGenerationsVarianceResults.csv");
 
@@ -380,7 +411,7 @@ public class GARuleMiner {
             for (int r = 0; r < N_RUNS; r++) {
                 ga.setNumberOfGenerations(nGensVariations[g]);
                 nGens = nGensVariations[g];
-                
+
                 ga.run(GeneticAlgorithm.SELECTION_TOURNEMENT);
 
                 recordResults(ga, r);
@@ -396,7 +427,13 @@ public class GARuleMiner {
 
     private static void runNRulesVarianceTest() throws FileNotFoundException {
 
-        RuleMiner ga = new RuleMiner(popSize, nGens, data, N_RULES_MIN);
+        RuleMiner ga;
+        if (dataType == DATA_TYPE_FLOAT) {
+            ga = new FloatRuleMiner(popSize, nGens, data, nRules);
+        } else {
+            ga = new RuleMiner(popSize, nGens, data, nRules);
+        }
+        
         initRulesCSV("NoOfRulesVarianceResults.csv");
 
         for (int n = 0; n < nRulesVariations.length; n++) {
@@ -444,6 +481,11 @@ public class GARuleMiner {
             sb.append("Rule ");
             sb.append(String.valueOf(i + 1));
             sb.append(',');
+            if (dataType == DATA_TYPE_FLOAT) {
+                sb.append("Tolerance ");
+                sb.append(String.valueOf(i + 1));
+                sb.append(',');
+            }
             sb.append("Fitness Awarded ");
             sb.append(String.valueOf(i + 1));
             sb.append(',');
@@ -593,7 +635,7 @@ public class GARuleMiner {
 
     private static void writeResults(int id, double rate) {
         StringBuilder sb = new StringBuilder();
-        double best = calcAvg(runResults[RuleMiner.RESULT_BEST]), 
+        double best = calcAvg(runResults[RuleMiner.RESULT_BEST]),
                 worst = calcAvg(runResults[RuleMiner.RESULT_WORST]);
         sb.append(id);
         sb.append(',');
@@ -614,7 +656,12 @@ public class GARuleMiner {
 
     private static void writeIndividualsResultsHorizotal(int id, ArrayList<Rule> rules, int fitness) {
         Rule rule;
-        RuleMiner rm = new RuleMiner(data);
+        RuleMiner rm;
+        if (dataType == DATA_TYPE_FLOAT) {
+            rm = new FloatRuleMiner(data);
+        } else {
+            rm = new RuleMiner(data);
+        }
         int[] ruleFitnesses = rm.calcRuleFitness(rules);
 
         StringBuilder sb = new StringBuilder();
@@ -622,9 +669,20 @@ public class GARuleMiner {
         sb.append(',');
         for (int r = 0; r < rules.size(); r++) {
             rule = rules.get(r);
-            sb.append(String.valueOf(rule.getCharArr()));
-            sb.append(' ');
-            sb.append(String.valueOf(rule.getOutput()));
+            if (dataType == DATA_TYPE_FLOAT) {
+                float[] realNumArr = rule.getRealNumArr();
+                for (float realNum : realNumArr) {
+                    sb.append(String.valueOf(realNum));
+                    sb.append(' ');
+                }
+                sb.append(String.valueOf(rule.getOutput()));
+                sb.append(',');
+                sb.append(String.valueOf(rule.getTolerance()));
+            } else {
+                sb.append(String.valueOf(rule.getCharArr()));
+                sb.append(' ');
+                sb.append(String.valueOf(rule.getOutput()));
+            }
             sb.append(',');
             sb.append(String.valueOf(ruleFitnesses[r]));
             sb.append(',');
@@ -633,13 +691,18 @@ public class GARuleMiner {
         sb.append('\n');
         pw.write(sb.toString());
     }
-    
+
     private static void writeIndividualsResultsVertical(int id, ArrayList<Rule> rules, int fitness) {
         Rule rule;
-        RuleMiner rm = new RuleMiner(data);
+        RuleMiner rm;
+        if (dataType == DATA_TYPE_FLOAT) {
+            rm = new FloatRuleMiner(data);
+        } else {
+            rm = new RuleMiner(data);
+        }
         int[] ruleFitnesses = rm.calcRuleFitness(rules);
         int ruleFitness, nFitRules = 0;
-        
+
         StringBuilder sb = new StringBuilder();
         sb.append('\n');
         sb.append("ID");
@@ -648,20 +711,35 @@ public class GARuleMiner {
         sb.append('\n');
         sb.append("Rule");
         sb.append(',');
+        if (dataType == DATA_TYPE_FLOAT) {
+            sb.append("Tolerence");
+            sb.append(',');
+        }
         sb.append("Fitness Awarded");
         sb.append('\n');
         for (int r = 0; r < rules.size(); r++) {
             rule = rules.get(r);
             ruleFitness = ruleFitnesses[r];
-            
-            if(ruleFitness > 0){
-                sb.append(String.valueOf(rule.getCharArr()));
-                sb.append(' ');
-                sb.append(String.valueOf(rule.getOutput()));
+
+            if (ruleFitness > 0) {
+                if (dataType == DATA_TYPE_FLOAT) {
+                    float[] realNumArr = rule.getRealNumArr();
+                    for (float realNum : realNumArr) {
+                        sb.append(String.valueOf(realNum));
+                        sb.append(' ');
+                    }
+                    sb.append(String.valueOf(rule.getOutput()));
+                    sb.append(',');
+                    sb.append(String.valueOf(rule.getTolerance()));
+                } else {
+                    sb.append(String.valueOf(rule.getCharArr()));
+                    sb.append(' ');
+                    sb.append(String.valueOf(rule.getOutput()));
+                }
                 sb.append(',');
                 sb.append(String.valueOf(ruleFitness));
                 sb.append('\n');
-                
+
                 nFitRules++;
             }
         }
@@ -682,7 +760,7 @@ public class GARuleMiner {
         }
     }
 
-    private static ArrayList<Rule> chromosomeToRules(Object[] oGenes, int conditionSize) {
+    private static ArrayList<Rule> chromosomeToCharRules(Object[] oGenes, int conditionSize) {
         ArrayList<Rule> ret = new ArrayList<>();
         int k = 0;
         Character[] genes = new Character[oGenes.length];
@@ -699,6 +777,28 @@ public class GARuleMiner {
             }
             ret.add(new Rule((char[]) cond,
                     Character.getNumericValue(genes[k++]), Rule.DATA_TYPE_BINARY));
+        }
+
+        return ret;
+    }
+
+    private static ArrayList<Rule> chromosomeToFloatRules(Object[] oGenes, int conditionSize) {
+        ArrayList<Rule> ret = new ArrayList<>();
+        int k = 0;
+        Float[] genes = new Float[oGenes.length];
+
+        for (int g = 0; g < genes.length; g++) {
+            genes[g] = (Float) oGenes[g];
+        }
+
+        for (int r = 0; r < nRules; r++) {
+            float[] cond = new float[conditionSize];
+
+            for (int c = 0; c < conditionSize; c++) {
+                cond[c] = genes[k++];
+            }
+            ret.add(new Rule((float[]) cond, (int) genes[k++].floatValue(),
+                    genes[k++], Rule.DATA_TYPE_FLOAT));
         }
 
         return ret;

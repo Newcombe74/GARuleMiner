@@ -31,7 +31,7 @@ public class GARuleMiner {
             N_GENS_MIN = 1,
             N_GENS_MAX = 200,
             N_GENS_RES_STEP = 1,
-            N_RUNS = 10,
+            N_RUNS = 5,
             N_RULES_MIN = 1,
             N_RULES_MAX = 100,
             N_RULES_RES_STEP = 1,
@@ -39,11 +39,11 @@ public class GARuleMiner {
     //Population
     private static int[] popSizeVariations;
     private static int popSizeIdx = 0;
-    private static int popSize = 100;
+    private static int popSize = 500;
     //Generations
     private static int[] nGensVariations;
     private static int nGensIdx = 0;
-    private static int nGens = 100;
+    private static int nGens = 200;
     //Mutation
     private static double[] mutationRateVariations;
     private static int mutationRateIdx = 0;
@@ -53,7 +53,7 @@ public class GARuleMiner {
     private static int[] nRulesVariations;
     private static int nRulesIdx = 0;
     private static int chromSize = 0;
-    private static int nRules = 10;
+    private static int nRules = 40;
 
     //Test Option Indexes
     private static final int TEST_MUT = 1,
@@ -142,7 +142,7 @@ public class GARuleMiner {
                     System.out.println("Input invalid");
             }
         }
-        
+
         ringBell();
     }
 
@@ -305,10 +305,11 @@ public class GARuleMiner {
             Individual i = ga.getBestIndividual();
             if (dataType == DATA_TYPE_FLOAT) {
                 rules = chromosomeToFloatRules(i.getChromosome(), conditionSize);
+                writeIndividualsResultsVertical(r + 1, rules, i.getFitness());
             } else {
                 rules = chromosomeToCharRules(i.getChromosome(), conditionSize);
+                writeIndividualsResultsHorizotal(r + 1, rules, i.getFitness());
             }
-            writeIndividualsResultsHorizotal(r + 1, rules, i.getFitness());
 
             //Check for fittest individual
             nFitRules = ga.countFitRules(rules);
@@ -325,12 +326,10 @@ public class GARuleMiner {
         }
 
         //Write fittest individual out of all runs
-        if (dataType == DATA_TYPE_FLOAT) {
-            rules = chromosomeToFloatRules(bestIndiv.getChromosome(), conditionSize);
-        } else {
+        if (dataType != DATA_TYPE_FLOAT) {
             rules = chromosomeToCharRules(bestIndiv.getChromosome(), conditionSize);
+            writeIndividualsResultsVertical(bestIndivID, rules, bestIndiv.getFitness());
         }
-        writeIndividualsResultsVertical(bestIndivID, rules, bestIndiv.getFitness());
 
         System.out.println("Test complete");
         pw.close();
@@ -480,23 +479,20 @@ public class GARuleMiner {
         sb.append(String.valueOf(mutationRate));
         sb.append('\n');
         sb.append('\n');
-        sb.append("Id");
-        sb.append(',');
-        for (int i = 0; i < nRules; i++) {
-            sb.append("Rule ");
-            sb.append(String.valueOf(i + 1));
+        if (dataType != DATA_TYPE_FLOAT) {
+            sb.append("Id");
             sb.append(',');
-            if (dataType == DATA_TYPE_FLOAT) {
-                sb.append("Tolerance ");
+            for (int i = 0; i < nRules; i++) {
+                sb.append("Rule ");
+                sb.append(String.valueOf(i + 1));
+                sb.append(',');
+                sb.append("Fitness Awarded ");
                 sb.append(String.valueOf(i + 1));
                 sb.append(',');
             }
-            sb.append("Fitness Awarded ");
-            sb.append(String.valueOf(i + 1));
-            sb.append(',');
+            sb.append("Fitness");
+            sb.append('\n');
         }
-        sb.append("Fitness");
-        sb.append('\n');
         pw.write(sb.toString());
     }
 
@@ -681,8 +677,6 @@ public class GARuleMiner {
                     sb.append(' ');
                 }
                 sb.append(String.valueOf(rule.getOutput()));
-                sb.append(',');
-                sb.append(String.valueOf(rule.getTolerance()));
             } else {
                 sb.append(String.valueOf(rule.getCharArr()));
                 sb.append(' ');
@@ -716,10 +710,6 @@ public class GARuleMiner {
         sb.append('\n');
         sb.append("Rule");
         sb.append(',');
-        if (dataType == DATA_TYPE_FLOAT) {
-            sb.append("Tolerence");
-            sb.append(',');
-        }
         sb.append("Fitness Awarded");
         sb.append('\n');
         for (int r = 0; r < rules.size(); r++) {
@@ -734,8 +724,6 @@ public class GARuleMiner {
                         sb.append(' ');
                     }
                     sb.append(String.valueOf(rule.getOutput()));
-                    sb.append(',');
-                    sb.append(String.valueOf(rule.getTolerance()));
                 } else {
                     sb.append(String.valueOf(rule.getCharArr()));
                     sb.append(' ');
@@ -743,15 +731,18 @@ public class GARuleMiner {
                 }
                 sb.append(',');
                 sb.append(String.valueOf(ruleFitness));
-                sb.append('\n');
+                
+                if ((r + 1) != rules.size()) {
+                    sb.append('\n');
+                }
 
                 nFitRules++;
             }
         }
-        sb.append('\n');
         sb.append(String.valueOf(nFitRules));
         sb.append(',');
         sb.append(String.valueOf(fitness));
+        sb.append('\n');
         sb.append('\n');
         pw.write(sb.toString());
     }
@@ -800,7 +791,7 @@ public class GARuleMiner {
                 cond[c] = genes[k++];
             }
             ret.add(new Rule((float[]) cond, (int) genes[k++].floatValue(),
-                    genes[k++], Rule.DATA_TYPE_FLOAT));
+                    Rule.DATA_TYPE_FLOAT));
         }
 
         return ret;
@@ -825,8 +816,8 @@ public class GARuleMiner {
 
     private static void ringBell() {
         try {
-            AudioInputStream audioInputStream = 
-                    AudioSystem.getAudioInputStream(
+            AudioInputStream audioInputStream
+                    = AudioSystem.getAudioInputStream(
                             new File("./src/garuleminer/BELL.WAV"));
             Clip clip = AudioSystem.getClip();
             clip.open(audioInputStream);

@@ -65,19 +65,15 @@ public class FloatRuleMiner extends RuleMiner {
 
                 //Condition genes
                 for (int c = 0; c < this.conditionSize; c++) {
-                    chrom[chromPos + c] = (float) round(new Random().nextFloat(), 6);
+                    chrom[chromPos] = (float) round(new Random().nextFloat(), 6);
+                    chromPos++;
                 }
 
                 //Output gene
                 intArray = new float[]{(float) 1.0, (float) 0.0};
                 idx = new Random().nextInt(intArray.length);
-                chrom[chromPos + this.conditionSize] = (float) intArray[idx];
-
-                //Tolerance gene
-                chrom[chromPos + this.conditionSize + 1]
-                        = (float) round(new Random().nextFloat(), 6);
-
-                chromPos += this.conditionSize + 2;
+                chrom[chromPos] = (float) intArray[idx];
+                chromPos++;
             }
             super.population[i] = new Individual(chrom);
         }
@@ -150,13 +146,13 @@ public class FloatRuleMiner extends RuleMiner {
             double m = Math.random();
             if (this.conditionSize == condBound) {
                 geneType = GENE_OUT;
-                condBound++;
-            } else if ((this.conditionSize + 1) == condBound){
+                condBound = 0;
+            } else if ((i % 2) != 0){
                 geneType = GENE_TOL;
                 condBound++;
             }else{
                 geneType = GENE_COND;
-                condBound = 0;
+                condBound++;
             }
             
             if (super.probabilityOfMutation >= m) {
@@ -226,7 +222,7 @@ public class FloatRuleMiner extends RuleMiner {
                 cond[c] = genes[k++];
             }
             ret.add(new Rule((float[]) cond, (int) genes[k++].floatValue(),
-                    genes[k++], Rule.DATA_TYPE_FLOAT));
+                    Rule.DATA_TYPE_FLOAT));
         }
 
         return ret;
@@ -236,17 +232,22 @@ public class FloatRuleMiner extends RuleMiner {
     protected boolean evaluateConditionMatch(Rule indivRule, Rule datasetRule) {
         float[] indivCond = indivRule.getRealNumArr(),
                 datasetCond = datasetRule.getRealNumArr();
-        float tolerance = indivRule.getTolerance();
+        float value, tolerance;
         float min, max;
-
+        int condIdx = 0;
+        
         for (int c = 0; c < indivCond.length; c++) {
-            min = indivCond[c] - tolerance;
-            max = indivCond[c] + tolerance;
+            value = indivCond[c];
+            tolerance = indivCond[c + 1];
+            min = value - tolerance;
+            max = value + tolerance;
             
-            if (!((datasetCond[c] >= min) 
-                    && (datasetCond[c] <= max))) {
+            if (!((datasetCond[condIdx] >= min) 
+                    && (datasetCond[condIdx] <= max))) {
                  return false;
             }
+            condIdx++;
+            c++;
         }
         return true;
     }
@@ -259,7 +260,7 @@ public class FloatRuleMiner extends RuleMiner {
     }
     
     private float flipBinaryFloat(Object gene) {
-        if ((int) gene == 1) {
+        if ((Float) gene == (float) 1.0) {
             return (float) 0.0;
         } else {
             return (float) 1.0;

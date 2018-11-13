@@ -54,7 +54,7 @@ public class RuleMiner extends GeneticAlgorithm {
             if (this.dataRules[0].getCharArr() != null) {
                 return this.dataRules[0].getCharArr().length;
             } else if (this.dataRules[0].getRealNumArr() != null) {
-                return this.dataRules[0].getRealNumArr().length;
+                return this.dataRules[0].getRealNumArr().length * 2;
             }
         }
         return 0;
@@ -65,7 +65,7 @@ public class RuleMiner extends GeneticAlgorithm {
             if (this.dataRules[0].getCharArr() != null) {
                 return (this.conditionSize + 1) * this.nRules;
             } else if (this.dataRules[0].getRealNumArr() != null) {
-                return (this.conditionSize + 2) * this.nRules;
+                return (this.conditionSize + 1) * this.nRules;
             }
         }
         return 0;

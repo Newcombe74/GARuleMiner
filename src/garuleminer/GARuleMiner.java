@@ -11,6 +11,9 @@ import java.util.Scanner;
 import java.util.ArrayList;
 import java.io.File;
 import java.io.FileNotFoundException;
+import javax.sound.sampled.AudioInputStream;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.Clip;
 
 import geneticalgorithm.*;
 import java.io.PrintWriter;
@@ -26,7 +29,7 @@ public class GARuleMiner {
             POP_SIZE_MAX = 1000,
             POP_SIZE_RES_STEP = 10,
             N_GENS_MIN = 1,
-            N_GENS_MAX = 100,
+            N_GENS_MAX = 200,
             N_GENS_RES_STEP = 1,
             N_RUNS = 10,
             N_RULES_MIN = 1,
@@ -40,7 +43,7 @@ public class GARuleMiner {
     //Generations
     private static int[] nGensVariations;
     private static int nGensIdx = 0;
-    private static int nGens = 50;
+    private static int nGens = 100;
     //Mutation
     private static double[] mutationRateVariations;
     private static int mutationRateIdx = 0;
@@ -139,6 +142,8 @@ public class GARuleMiner {
                     System.out.println("Input invalid");
             }
         }
+        
+        ringBell();
     }
 
     private static void getUserTestHyperparamsChoice() throws FileNotFoundException {
@@ -373,7 +378,7 @@ public class GARuleMiner {
         } else {
             ga = new RuleMiner(popSize, nGens, data, nRules);
         }
-        
+
         chromSize = ga.getChromosomeSize();
         initPopulationsCSV("PopulationSizeVarianceResults.csv");
 
@@ -403,7 +408,7 @@ public class GARuleMiner {
         } else {
             ga = new RuleMiner(popSize, nGens, data, nRules);
         }
-        
+
         chromSize = ga.getChromosomeSize();
         initGenerationsCSV("NoOfGenerationsVarianceResults.csv");
 
@@ -433,7 +438,7 @@ public class GARuleMiner {
         } else {
             ga = new RuleMiner(popSize, nGens, data, nRules);
         }
-        
+
         initRulesCSV("NoOfRulesVarianceResults.csv");
 
         for (int n = 0; n < nRulesVariations.length; n++) {
@@ -754,10 +759,7 @@ public class GARuleMiner {
 
     //START_Utils
     private static void outputPercComplete(double a, double b) {
-        if (calcPerc(a, b) > percComplete) {
-            System.out.println("Test " + percComplete + "% complete");
-            percComplete++;
-        }
+        System.out.println("Test " + calcPerc(a, b) + "% complete");
     }
 
     private static ArrayList<Rule> chromosomeToCharRules(Object[] oGenes, int conditionSize) {
@@ -819,6 +821,19 @@ public class GARuleMiner {
 
     private static double calcPerc(double a, double b) {
         return (100 / b) * a;
+    }
+
+    private static void ringBell() {
+        try {
+            AudioInputStream audioInputStream = 
+                    AudioSystem.getAudioInputStream(
+                            new File("./src/garuleminer/BELL.WAV"));
+            Clip clip = AudioSystem.getClip();
+            clip.open(audioInputStream);
+            clip.start();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
     }
     //END_Utils
 }

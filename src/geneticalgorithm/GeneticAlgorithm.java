@@ -25,7 +25,7 @@ public class GeneticAlgorithm {
 
     //Population
     protected Individual population[];
-    private Individual offspring[];
+    protected Individual offspring[];
 
     //Results
     public final static int RESULT_BEST = 0,
@@ -82,7 +82,7 @@ public class GeneticAlgorithm {
         this.population = calcFitness(this.population);
     }
     
-    private void recordResults(int g){
+    protected void recordResults(int g){
         this.results[g][RESULT_BEST] = bestFitness(this.population);
             this.results[g][RESULT_WORST] = worstFitness(this.population);
             this.results[g][RESULT_RANGE] = bestFitness(this.population) 
@@ -104,7 +104,7 @@ public class GeneticAlgorithm {
     }
     
     //START_Selection
-    private Individual[] selection(int selectionType) {
+    protected Individual[] selection(int selectionType) {
         switch (selectionType) {
             case SELECTION_TOURNEMENT:
                 return tournementSelection();
@@ -116,7 +116,7 @@ public class GeneticAlgorithm {
         }
     }
 
-    private Individual[] tournementSelection() {
+    protected Individual[] tournementSelection() {
         Individual[] nextGen = new Individual[populationSize];
 
         if (offspring.length > 0) {
@@ -137,7 +137,7 @@ public class GeneticAlgorithm {
         }
     }
 
-    private Individual[] rouletteWheelSelection() {
+    protected Individual[] rouletteWheelSelection() {
         Individual[] nextGen = new Individual[populationSize];
 
         //Put parents and children into a single population
@@ -214,7 +214,7 @@ public class GeneticAlgorithm {
     //END_Crossover
 
     //START_Mutation
-    private Individual[] mutate() {
+    protected Individual[] mutate() {
         for (Individual child : offspring) {
             child.setChromosome(mutateChromosome(child.getChromosome()));
         }

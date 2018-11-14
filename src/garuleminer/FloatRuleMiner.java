@@ -17,13 +17,13 @@ import java.util.Random;
 public class FloatRuleMiner extends RuleMiner {
 
     //Validation
-    private final int VALID_NONE = 1, VALID_HOLD = 2, VALID_K_FOLD = 3;
-    private int holdTrainDist = 80, kFolds = 5;
+    public static final int VALID_NONE = 1, VALID_HOLD = 2, VALID_K_FOLD = 3;
+    private int holdTrainDist = 80, kFolds = 5, kFoldTrainDist = 67;
     //Crossover
-    private final int CROSS_REG = 1, CROSS_BLEND_GENE = 2,
+    public final int CROSS_REG = 1, CROSS_BLEND_GENE = 2,
             CROSS_BLEND_RULE = 3, CROSS_BLEND_CANON = 4;
     //Mutation
-    private final int MUT_CREEP = 1, MUT_NORM_DIST = 2;
+    public final int MUT_CREEP = 1, MUT_NORM_DIST = 2;
     private float mutCreepTol = (float) 0.1;
     //Gene Types
     private final int GENE_COND = 1, GENE_OUT = 2, GENE_TOL = 3;
@@ -33,18 +33,21 @@ public class FloatRuleMiner extends RuleMiner {
             mutationMethod = MUT_CREEP,
             crossoverMethod = CROSS_REG;
 
-    //Holdout
-    protected Rule[] tDataRuleSet, vDataRuleSet;
-    //k-fold
+    //Holdout an k-fold
+    protected Rule[] tDataRuleSet, vHoldDataRuleSet, vKFoldDataRuleSet;
     protected Rule[][] kDataRuleSets;
 
     public FloatRuleMiner(Rule[] ruleBase) {
         super(ruleBase);
+        initHoldoutRules();
+        initKRules();
     }
 
     public FloatRuleMiner(int populationSize, int numberOfGenerations,
             Rule[] ruleBase, int nRules) {
         super(populationSize, numberOfGenerations, ruleBase, nRules);
+        initHoldoutRules();
+        initKRules();
     }
 
     public FloatRuleMiner(int populationSize, int numberOfGenerations,
@@ -52,6 +55,33 @@ public class FloatRuleMiner extends RuleMiner {
             Rule[] ruleBase, int nRules) {
         super(populationSize, numberOfGenerations, probabilityOfMutation,
                 ruleBase, nRules);
+        initHoldoutRules();
+        initKRules();
+    }
+    
+    public void runHoldout(int selectionType){
+        //INIT populations
+        this.population = new Individual[populationSize];
+        this.offspring = new Individual[populationSize];
+        
+        //SET each individuals genes to be 1 or 0 at random
+        initChromosomes();
+
+        for (int g = 0; g < this.numberOfGenerations; g++) {
+            this.population = calcFitness(this.population, this.tDataRuleSet);
+
+            recordResults(g);
+
+            this.offspring = crossover();
+
+            this.offspring = mutate();
+
+            this.offspring = calcFitness(this.offspring, this.tDataRuleSet);
+
+            this.population = selection(selectionType);
+        }
+        
+        this.population = calcFitness(this.population, this.vHoldDataRuleSet);
     }
 
     @Override
@@ -76,6 +106,60 @@ public class FloatRuleMiner extends RuleMiner {
                 chromPos++;
             }
             super.population[i] = new Individual(chrom);
+        }
+    }
+
+    private void initHoldoutRules() {
+        int idx = 0;
+        int len = super.dataRules.length;
+        int tlen = (len / 100) * holdTrainDist;
+        int vlen = len - tlen;
+
+        //SET Training set
+        tDataRuleSet = new Rule[tlen];
+        for (int r = 0; r < tlen; r++) {
+            tDataRuleSet[r] = super.dataRules[idx++];
+        }
+
+        //SET Validation set
+        vHoldDataRuleSet = new Rule[vlen];
+        for (int r = 0; r < vlen; r++) {
+            vHoldDataRuleSet[r] = super.dataRules[idx++];
+        }
+    }
+
+    private void initKRules() {
+        int len = super.dataRules.length;
+        int tlen = (len / 100) * kFoldTrainDist;
+        int vlen = len - tlen;
+        double f = (double) tlen % kFolds;
+
+        if (f == 0) {
+            int foldSize = tlen / kFolds;
+            int idx = 0, bound = foldSize, kIdx = 0, fIdx = 0;
+            
+            //SET Training/Testing sets
+            kDataRuleSets = new Rule[kFolds][foldSize];
+            for (int r = 0; r < tlen; r++) {
+                if (r == bound) {
+                    kIdx++;
+                    fIdx = 0;
+                    bound += foldSize;
+                }
+                kDataRuleSets[kIdx][fIdx++] = super.dataRules[idx++];
+            }
+
+            //SET Validation set
+            vKFoldDataRuleSet = new Rule[vlen];
+            for (int r = 0; r < vlen; r++) {
+                vKFoldDataRuleSet[r] = super.dataRules[idx++];
+            }
+        } else {
+            throw new IllegalArgumentException(
+                    "Rule dataset of size "
+                    + len
+                    + " does not divide by k-fold value "
+                    + this.kFolds);
         }
     }
 
@@ -123,18 +207,18 @@ public class FloatRuleMiner extends RuleMiner {
         ArrayList<Individual> children = new ArrayList<>();
         Object[][] crossoverGenes = new Object[2][super.chromosomeSize];
         final int child1 = 0, child2 = 1;
-        int geneCounter = 0, ruleCounter = 0, 
+        int geneCounter = 0, ruleCounter = 0,
                 ruleSize = this.conditionSize + 1, crossoverPoint;
         Object[] parent1, parent2;
         float blend;
-        
+
         for (int i = 0; i < populationSize - 1; i++) {
             parent1 = population[i].getChromosome();
             parent2 = population[(i + 1)].getChromosome();
 
             crossoverPoint = new Random().nextInt(
-                (super.chromosomeSize / this.nRules) - 1) + 1;
-            
+                    (super.chromosomeSize / this.nRules) - 1) + 1;
+
             for (int g = 0; g < super.chromosomeSize; g++) {
                 if (geneCounter == ruleSize) {
                     ruleCounter++;
@@ -285,6 +369,55 @@ public class FloatRuleMiner extends RuleMiner {
         }
         return ret;
     }
+    
+    protected Individual[] calcFitness(Individual[] pop, Rule[] ruleset) {
+        Individual[] ret = new Individual[pop.length];
+
+        for (int i = 0; i < pop.length; i++) {
+            int fitness = 0;
+            ArrayList<Rule> indivRuleBase = chromosomeToRules(pop[i].getChromosome());
+
+            for (Rule rule : ruleset) {
+                for (Rule indivRule : indivRuleBase) {
+                    //IF condition matched
+                    if (evaluateConditionMatch(indivRule, rule)) {
+                        //IF output matches
+                        if (indivRule.getOutput() == rule.getOutput()) {
+                            fitness++;
+                        }
+                        break;
+                    }
+                }
+            }
+            ret[i] = new Individual(pop[i].getChromosome(), fitness);
+        }
+        return ret;
+    }
+    
+    public int[] calcRuleFitness(ArrayList<Rule> indivRuleBase, Rule[] ruleset) {
+        int ruleIdx;
+
+        int[] ruleFitnesses = new int[indivRuleBase.size()];
+        for (int i = 0; i < ruleFitnesses.length; i++) {
+            ruleFitnesses[i] = 0;
+        }
+
+        for (Rule dataRule : ruleset) {
+            ruleIdx = 0;
+            for (Rule indivRule : indivRuleBase) {
+                //IF condition matches
+                if (evaluateConditionMatch(indivRule, dataRule)) {
+                    //IF output matches
+                    if (indivRule.getOutput() == dataRule.getOutput()) {
+                        ruleFitnesses[ruleIdx]++;
+                    }
+                    break;
+                }
+                ruleIdx++;
+            }
+        }
+        return ruleFitnesses;
+    }
 
     @Override
     public ArrayList<Rule> chromosomeToRules(Object[] oGenes) {
@@ -405,12 +538,36 @@ public class FloatRuleMiner extends RuleMiner {
         this.tDataRuleSet = tDataRuleSet;
     }
 
-    public Rule[] getvDataRuleSet() {
-        return vDataRuleSet;
+    public int getkFoldTrainDist() {
+        return kFoldTrainDist;
     }
 
-    public void setvDataRuleSet(Rule[] vDataRuleSet) {
-        this.vDataRuleSet = vDataRuleSet;
+    public void setkFoldTrainDist(int kFoldTrainDist) {
+        this.kFoldTrainDist = kFoldTrainDist;
+    }
+
+    public float getMutCreepTol() {
+        return mutCreepTol;
+    }
+
+    public void setMutCreepTol(float mutCreepTol) {
+        this.mutCreepTol = mutCreepTol;
+    }
+
+    public Rule[] getvHoldDataRuleSet() {
+        return vHoldDataRuleSet;
+    }
+
+    public void setvHoldDataRuleSet(Rule[] vHoldDataRuleSet) {
+        this.vHoldDataRuleSet = vHoldDataRuleSet;
+    }
+
+    public Rule[] getvKFoldDataRuleSet() {
+        return vKFoldDataRuleSet;
+    }
+
+    public void setvKFoldDataRuleSet(Rule[] vKFoldDataRuleSet) {
+        this.vKFoldDataRuleSet = vKFoldDataRuleSet;
     }
 
     public Rule[][] getkDataRuleSets() {
@@ -420,5 +577,4 @@ public class FloatRuleMiner extends RuleMiner {
     public void setkDataRuleSets(Rule[][] kDataRuleSets) {
         this.kDataRuleSets = kDataRuleSets;
     }
-
 }

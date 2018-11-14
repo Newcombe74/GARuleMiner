@@ -20,7 +20,7 @@ public class RuleMiner extends GeneticAlgorithm {
     protected int nRules, conditionSize;
 
     public RuleMiner(Rule[] ruleBase) {
-        this.dataRules = ruleBase;
+        this.dataRules = randomiseRuleBase(ruleBase);
     }
 
     public RuleMiner(int populationSize, int numberOfGenerations,
@@ -29,7 +29,7 @@ public class RuleMiner extends GeneticAlgorithm {
         super.numberOfGenerations = numberOfGenerations;
         super.probabilityOfMutation = (float) 1 / super.populationSize;
         super.results = new float[super.numberOfGenerations][N_RESULT_SETS];
-        this.dataRules = ruleBase;
+        this.dataRules = randomiseRuleBase(ruleBase);
         this.nRules = nRules;
         this.conditionSize = calcConditionSize();
         super.chromosomeSize = calcChromSize();
@@ -43,10 +43,25 @@ public class RuleMiner extends GeneticAlgorithm {
         super.chromosomeSize = chromosomeSize;
         super.probabilityOfMutation = probabilityOfMutation;
         super.results = new float[super.numberOfGenerations][N_RESULT_SETS];
-        this.dataRules = ruleBase;
+        this.dataRules = randomiseRuleBase(ruleBase);
         this.nRules = nRules;
         this.conditionSize = calcConditionSize();
         super.chromosomeSize = calcChromSize();
+    }
+
+    private Rule[] randomiseRuleBase(Rule[] ruleBase) {
+        Rule temp;
+        int idx;
+
+        Random rnd = new Random();
+        for (int i = ruleBase.length - 1; i > 0; i--) {
+            idx = rnd.nextInt(i + 1);
+            
+            temp = ruleBase[idx];
+            ruleBase[idx] = ruleBase[i];
+            ruleBase[i] = temp;
+        }
+        return ruleBase;
     }
 
     private int calcConditionSize() {
@@ -69,7 +84,7 @@ public class RuleMiner extends GeneticAlgorithm {
             }
         }
         return 0;
-        
+
     }
 
     @Override
@@ -210,7 +225,7 @@ public class RuleMiner extends GeneticAlgorithm {
 
     public int[] calcRuleFitness(ArrayList<Rule> indivRuleBase) {
         int ruleIdx;
-        
+
         int[] ruleFitnesses = new int[indivRuleBase.size()];
         for (int i = 0; i < ruleFitnesses.length; i++) {
             ruleFitnesses[i] = 0;
@@ -235,17 +250,17 @@ public class RuleMiner extends GeneticAlgorithm {
 
     public int countFitRules(ArrayList<Rule> indivRuleBase) {
         int nFitRules = 0;
-        
+
         int[] ruleFitnesses = calcRuleFitness(indivRuleBase);
-        
-        for(int fitness : ruleFitnesses){
-            if(fitness > 0){
+
+        for (int fitness : ruleFitnesses) {
+            if (fitness > 0) {
                 nFitRules++;
             }
         }
         return nFitRules;
     }
-    
+
     public ArrayList<Rule> chromosomeToRules(Object[] oGenes) {
         ArrayList<Rule> ret = new ArrayList<>();
         int k = 0;

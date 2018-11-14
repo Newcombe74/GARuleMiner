@@ -7,6 +7,9 @@ package garuleminer;
 
 import static garuleminer.Rule.DATA_TYPE_BINARY;
 import static garuleminer.Rule.DATA_TYPE_FLOAT;
+import static garuleminer.FloatRuleMiner.VALID_NONE;
+import static garuleminer.FloatRuleMiner.VALID_HOLD;
+import static garuleminer.FloatRuleMiner.VALID_K_FOLD;
 import java.util.Scanner;
 import java.util.ArrayList;
 import java.io.File;
@@ -31,7 +34,7 @@ public class GARuleMiner {
             N_GENS_MIN = 1,
             N_GENS_MAX = 200,
             N_GENS_RES_STEP = 1,
-            N_RUNS = 10,
+            N_RUNS = 5,
             N_RULES_MIN = 1,
             N_RULES_MAX = 100,
             N_RULES_RES_STEP = 1,
@@ -39,11 +42,11 @@ public class GARuleMiner {
     //Population
     private static int[] popSizeVariations;
     private static int popSizeIdx = 0;
-    private static int popSize = 100;
+    private static int popSize = 500;
     //Generations
     private static int[] nGensVariations;
     private static int nGensIdx = 0;
-    private static int nGens = 50;
+    private static int nGens = 200;
     //Mutation
     private static double[] mutationRateVariations;
     private static int mutationRateIdx = 0;
@@ -53,7 +56,7 @@ public class GARuleMiner {
     private static int[] nRulesVariations;
     private static int nRulesIdx = 0;
     private static int chromSize = 0;
-    private static int nRules = 10;
+    private static int nRules = 40;
 
     //Test Option Indexes
     private static final int TEST_MUT = 1,
@@ -67,12 +70,13 @@ public class GARuleMiner {
     private static int dataType;
 
     //User inputs
-    private static int selectedDataOption, selectedTestOption;
+    private static int selectedDataOption,
+            selectedValidationOption,
+            selectedTestOption;
 
     //Results
     private static double[][] runResults = new double[5][N_RUNS];
     private static PrintWriter pw;
-    private static int percComplete = 1;
 
     /**
      * @param args the command line arguments
@@ -127,10 +131,10 @@ public class GARuleMiner {
 
             switch (selectedDataOption) {
                 case 1:
-                    System.out.println("Starting rule mining");
                     if (dataType == DATA_TYPE_FLOAT) {
-                        runRuleMining(new FloatRuleMiner(popSize, nGens, data, nRules));
+                        getUserValidationMethodChoice();
                     } else {
+                        System.out.println("Starting rule mining");
                         runRuleMining(new RuleMiner(popSize, nGens, data, nRules));
                     }
                     inputValid = true;
@@ -145,6 +149,40 @@ public class GARuleMiner {
         }
 
         ringBell();
+    }
+
+    private static void getUserValidationMethodChoice() throws FileNotFoundException {
+        Scanner scanner = new Scanner(System.in);
+
+        boolean inputValid = false;
+        while (!inputValid) {
+            System.out.println("Please enter the number of the validation method you wish to use:");
+            System.out.println(VALID_NONE + ". None");
+            System.out.println(VALID_HOLD + ". Holdout");
+            System.out.println(VALID_K_FOLD + ". k-fold");
+
+            selectedValidationOption = scanner.nextInt();
+
+            switch (selectedValidationOption) {
+                case VALID_NONE:
+                    System.out.println("Starting rule mining");
+                    runRuleMining(new FloatRuleMiner(popSize, nGens, data, nRules));
+                    inputValid = true;
+                    break;
+                case VALID_HOLD:
+                    System.out.println("Starting rule mining");
+                    runHoldoutRuleMining();
+                    inputValid = true;
+                    break;
+                case VALID_K_FOLD:
+                    System.out.println("Starting rule mining");
+                    //TODO k-fold
+                    inputValid = true;
+                    break;
+                default:
+                    System.out.println("Input invalid");
+            }
+        }
     }
 
     private static void getUserTestHyperparamsChoice() throws FileNotFoundException {
@@ -298,7 +336,6 @@ public class GARuleMiner {
     //START_MINING
     private static void runRuleMining(RuleMiner ga) throws FileNotFoundException {
 
-        //RuleMiner ga = new RuleMiner(popSize, nGens, data, nRules);
         Individual bestIndiv = new Individual();
         ArrayList<Rule> rules;
         int conditionSize = ga.getConditionSize(),
@@ -342,6 +379,35 @@ public class GARuleMiner {
         if (dataType != DATA_TYPE_FLOAT) {
             rules = chromosomeToCharRules(bestIndiv.getChromosome(), conditionSize);
             writeIndividualsResultsVertical(bestIndivID, rules, bestIndiv.getFitness());
+        }
+
+        System.out.println("Test complete");
+        pw.close();
+    }
+
+    private static void runHoldoutRuleMining() throws FileNotFoundException {
+        FloatRuleMiner ga = new FloatRuleMiner(popSize, nGens, data, nRules);
+
+        ArrayList<Rule> rules;
+        int conditionSize = ga.getConditionSize();
+
+        //Calculate Mutation Rate
+        chromSize = ga.getChromosomeSize();
+        mutationRate = (double) (((double) 1 / popSize) + ((double) 1 / chromSize) / mRateMod);
+        ga.setProbabilityOfMutation(mutationRate);
+
+        initFittestCSV("FittestIndividualsResults.csv");
+
+        for (int r = 0; r < N_RUNS; r++) {
+            ga.runHoldout(RuleMiner.SELECTION_TOURNEMENT);
+
+            //Write fittest individual of the current run
+            Individual i = ga.getBestIndividual();
+            rules = chromosomeToFloatRules(i.getChromosome(), conditionSize);
+            writeFloatIndividualsResultsVertical(r + 1, rules, i.getFitness(),
+                    ga.getvHoldDataRuleSet());
+
+            outputPercComplete(r, N_RUNS);
         }
 
         System.out.println("Test complete");
@@ -763,6 +829,56 @@ public class GARuleMiner {
 
                 nFitRules++;
             }
+            
+            if((r + 1) == rules.size()){
+                sb.append('\n');
+            }
+        }
+        sb.append(String.valueOf(nFitRules));
+        sb.append(',');
+        sb.append(String.valueOf(fitness));
+        sb.append('\n');
+        sb.append('\n');
+        pw.write(sb.toString());
+    }
+
+    private static void writeFloatIndividualsResultsVertical(int id, ArrayList<Rule> rules, int fitness, Rule[] validationSet) {
+        Rule rule;
+        FloatRuleMiner rm = new FloatRuleMiner(data);
+        int[] ruleFitnesses = rm.calcRuleFitness(rules, validationSet);
+        int ruleFitness, nFitRules = 0;
+
+        StringBuilder sb = new StringBuilder();
+        sb.append('\n');
+        sb.append("ID");
+        sb.append(',');
+        sb.append(String.valueOf(id));
+        sb.append('\n');
+        sb.append("Rule");
+        sb.append(',');
+        sb.append("Fitness Awarded");
+        sb.append('\n');
+        for (int r = 0; r < rules.size(); r++) {
+            rule = rules.get(r);
+            ruleFitness = ruleFitnesses[r];
+
+            if (ruleFitness > 0) {
+                float[] realNumArr = rule.getRealNumArr();
+                for (float realNum : realNumArr) {
+                    sb.append(String.valueOf(realNum));
+                    sb.append(' ');
+                }
+                sb.append(String.valueOf(rule.getOutput()));
+                sb.append(',');
+                sb.append(String.valueOf(ruleFitness));
+
+                if ((r + 1) != rules.size()) {
+                    sb.append('\n');
+                }
+
+                nFitRules++;
+            }
+            
         }
         sb.append(String.valueOf(nFitRules));
         sb.append(',');

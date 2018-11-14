@@ -246,10 +246,10 @@ public class FloatRuleMiner extends RuleMiner {
 
                     if (upOrDown >= 0.5) {
                         //Add mutChange
-                        mutatedGenes[i] = ((float) mutatedGenes[i] + mutChange);
+                        mutatedGenes[i] = round((float) mutatedGenes[i] + mutChange, 6);
                     } else {
                         //Minus mutChange
-                        mutatedGenes[i] = ((float) mutatedGenes[i] - mutChange);
+                        mutatedGenes[i] = round((float) mutatedGenes[i] - mutChange, 6);
                     }
                 } else {
                     mutatedGenes[i] = flipBinaryFloat(mutatedGenes[i]);

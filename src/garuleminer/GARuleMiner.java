@@ -615,33 +615,23 @@ public class GARuleMiner {
         StringBuilder sb = new StringBuilder();
         sb.append("Avg Best Fitness (ABF)");
         sb.append(',');
-        sb.append("ABF Confidence Lower");
-        sb.append(',');
-        sb.append("ABF Confidence Upper");
+        sb.append("ABF Confidence");
         sb.append(',');
         sb.append("Avg Worst Fitness (AWF)");
         sb.append(',');
-        sb.append("AWF Confidence Lower");
-        sb.append(',');
-        sb.append("AWF Confidence Upper");
+        sb.append("AWF Confidence");
         sb.append(',');
         sb.append("Avg Fitness Range (AFR)");
         sb.append(',');
-        sb.append("AFR Confidence Lower");
-        sb.append(',');
-        sb.append("AFR Confidence Upper");
+        sb.append("AFR Confidence");
         sb.append(',');
         sb.append("Avg Avg Fitness (AAF)");
         sb.append(',');
-        sb.append("AAF Confidence Lower");
-        sb.append(',');
-        sb.append("AAF Confidence Upper");
+        sb.append("AAF Confidence");
         sb.append(',');
         sb.append("Avg Total Fitness (ATF)");
         sb.append(',');
-        sb.append("ATF Confidence Lower");
-        sb.append(',');
-        sb.append("ATF Confidence Upper");
+        sb.append("ATF Confidence");
         sb.append('\n');
         return sb.toString();
     }
@@ -656,7 +646,7 @@ public class GARuleMiner {
                 sum = calcAvg(runResults[RuleMiner.RESULT_SUM]);
 
         // calc confidence of the averages 
-        double[] bestConf = calcConfidenceBoundaries(runResults[RuleMiner.RESULT_BEST]),
+        double bestConf = calcConfidenceBoundaries(runResults[RuleMiner.RESULT_BEST]),
                 worstConf = calcConfidenceBoundaries(runResults[RuleMiner.RESULT_WORST]),
                 rangeConf = calcConfidenceBoundaries(runResults[RuleMiner.RESULT_RANGE]),
                 avgConf = calcConfidenceBoundaries(runResults[RuleMiner.RESULT_AVERAGE]),
@@ -669,33 +659,23 @@ public class GARuleMiner {
         sb.append(',');
         sb.append(String.valueOf(best));
         sb.append(',');
-        sb.append(String.valueOf(bestConf[0]));
-        sb.append(',');
-        sb.append(String.valueOf(bestConf[1]));
+        sb.append(String.valueOf(bestConf));
         sb.append(',');
         sb.append(String.valueOf(worst));
         sb.append(',');
-        sb.append(String.valueOf(worstConf[0]));
-        sb.append(',');
-        sb.append(String.valueOf(worstConf[1]));
+        sb.append(String.valueOf(worstConf));
         sb.append(',');
         sb.append(String.valueOf(range));
         sb.append(',');
-        sb.append(String.valueOf(rangeConf[0]));
-        sb.append(',');
-        sb.append(String.valueOf(rangeConf[1]));
+        sb.append(String.valueOf(rangeConf));
         sb.append(',');
         sb.append(String.valueOf(avg));
         sb.append(',');
-        sb.append(String.valueOf(avgConf[0]));
-        sb.append(',');
-        sb.append(String.valueOf(avgConf[1]));
+        sb.append(String.valueOf(avgConf));
         sb.append(',');
         sb.append(String.valueOf(sum));
         sb.append(',');
-        sb.append(String.valueOf(sumConf[0]));
-        sb.append(',');
-        sb.append(String.valueOf(sumConf[1]));
+        sb.append(String.valueOf(sumConf));
         sb.append('\n');
         pw.write(sb.toString());
     }
@@ -873,7 +853,7 @@ public class GARuleMiner {
         }
     }
 
-    private static double[] calcConfidenceBoundaries(double[] arr) {
+    private static double calcConfidenceBoundaries(double[] arr) {
 
         // calculate the mean value
         double mean = calcAvg(arr);
@@ -889,7 +869,7 @@ public class GARuleMiner {
         // value for 95% confidence interval
         double confidenceLevel = 1.96;
         double temp = confidenceLevel * standardDeviation / Math.sqrt(arr.length);
-        return new double[]{((mean - temp) - mean) * -1, (mean + temp) - mean};
+        return (double) (mean + temp) - mean;
     }
     //END_Utils
 }

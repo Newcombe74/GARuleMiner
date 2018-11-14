@@ -30,8 +30,10 @@ public class GeneticAlgorithm {
     //Results
     public final static int RESULT_BEST = 0,
             RESULT_WORST = 1,
-            RESULT_AVERAGE = 2,
-            RESULT_SUM = 3;
+            RESULT_RANGE = 2,
+            RESULT_AVERAGE = 3,
+            RESULT_SUM = 4,
+            N_RESULT_SETS = 5;
     protected float[][] results;
     
     //START_CONSTRUCTORS
@@ -43,7 +45,7 @@ public class GeneticAlgorithm {
         this.numberOfGenerations = numberOfGenerations;
         this.chromosomeSize = chromosomeSize;
         this.probabilityOfMutation = (float) 1 / this.populationSize;
-        this.results = new float[this.numberOfGenerations][4];
+        this.results = new float[this.numberOfGenerations][N_RESULT_SETS];
     }
 
     public GeneticAlgorithm(int populationSize, int numberOfGenerations, int chromosomeSize, double probabilityOfMutation) {
@@ -51,7 +53,7 @@ public class GeneticAlgorithm {
         this.numberOfGenerations = numberOfGenerations;
         this.chromosomeSize = chromosomeSize;
         this.probabilityOfMutation = probabilityOfMutation;
-        this.results = new float[this.numberOfGenerations][4];
+        this.results = new float[this.numberOfGenerations][N_RESULT_SETS];
     }
     //END_CONSTRUCTORS
     
@@ -66,10 +68,7 @@ public class GeneticAlgorithm {
         for (int g = 0; g < this.numberOfGenerations; g++) {
             this.population = calcFitness(this.population);
 
-            this.results[g][RESULT_BEST] = bestFitness(this.population);
-            this.results[g][RESULT_WORST] = worstFitness(this.population);
-            this.results[g][RESULT_AVERAGE] = avgFitness(this.population);
-            this.results[g][RESULT_SUM] = sumFitness(this.population);
+            recordResults(g);
 
             this.offspring = crossover();
 
@@ -81,6 +80,15 @@ public class GeneticAlgorithm {
         }
         
         this.population = calcFitness(this.population);
+    }
+    
+    private void recordResults(int g){
+        this.results[g][RESULT_BEST] = bestFitness(this.population);
+            this.results[g][RESULT_WORST] = worstFitness(this.population);
+            this.results[g][RESULT_RANGE] = bestFitness(this.population) 
+                    - worstFitness(this.population);
+            this.results[g][RESULT_AVERAGE] = avgFitness(this.population);
+            this.results[g][RESULT_SUM] = sumFitness(this.population);
     }
     
     protected void initChromosomes(){
@@ -360,7 +368,7 @@ public class GeneticAlgorithm {
     
     public void setNumberOfGenerations(int numberOfGenerations) {
         this.numberOfGenerations = numberOfGenerations;
-        this.results = new float[this.numberOfGenerations][4];
+        this.results = new float[this.numberOfGenerations][N_RESULT_SETS];
     }
 
     public void setProbabilityOfMutation(double probabilityOfMutation) {

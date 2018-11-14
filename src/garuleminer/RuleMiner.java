@@ -28,7 +28,7 @@ public class RuleMiner extends GeneticAlgorithm {
         super.populationSize = populationSize;
         super.numberOfGenerations = numberOfGenerations;
         super.probabilityOfMutation = (float) 1 / super.populationSize;
-        super.results = new float[super.numberOfGenerations][4];
+        super.results = new float[super.numberOfGenerations][N_RESULT_SETS];
         this.dataRules = ruleBase;
         this.nRules = nRules;
         this.conditionSize = calcConditionSize();
@@ -42,7 +42,7 @@ public class RuleMiner extends GeneticAlgorithm {
         super.numberOfGenerations = numberOfGenerations;
         super.chromosomeSize = chromosomeSize;
         super.probabilityOfMutation = probabilityOfMutation;
-        super.results = new float[super.numberOfGenerations][4];
+        super.results = new float[super.numberOfGenerations][N_RESULT_SETS];
         this.dataRules = ruleBase;
         this.nRules = nRules;
         this.conditionSize = calcConditionSize();

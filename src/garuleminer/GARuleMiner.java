@@ -31,29 +31,29 @@ public class GARuleMiner {
             N_GENS_MIN = 1,
             N_GENS_MAX = 200,
             N_GENS_RES_STEP = 1,
-            N_RUNS = 5,
+            N_RUNS = 50,
             N_RULES_MIN = 1,
             N_RULES_MAX = 100,
             N_RULES_RES_STEP = 1,
-            MUT_RES = 50;
+            MUT_RES = 100;
     //Population
     private static int[] popSizeVariations;
     private static int popSizeIdx = 0;
-    private static int popSize = 500;
+    private static int popSize = 100;
     //Generations
     private static int[] nGensVariations;
     private static int nGensIdx = 0;
-    private static int nGens = 200;
+    private static int nGens = 50;
     //Mutation
     private static double[] mutationRateVariations;
     private static int mutationRateIdx = 0;
     private static double mutationRate = (double) 1 / popSize;
-    private static double mRateMod = 1.5;
+    private static double mRateMod = 2;
     //Rules
     private static int[] nRulesVariations;
     private static int nRulesIdx = 0;
     private static int chromSize = 0;
-    private static int nRules = 40;
+    private static int nRules = 10;
 
     //Test Option Indexes
     private static final int TEST_MUT = 1,
@@ -69,7 +69,7 @@ public class GARuleMiner {
     private static int selectedDataOption, selectedTestOption;
 
     //Results
-    private static double[][] runResults = new double[4][N_RUNS];
+    private static double[][] runResults = new double[5][N_RUNS];
     private static PrintWriter pw;
     private static int percComplete = 1;
 
@@ -460,6 +460,7 @@ public class GARuleMiner {
     private static void recordResults(RuleMiner ga, int r) {
         runResults[RuleMiner.RESULT_BEST][r] = ga.getResult(nGens, RuleMiner.RESULT_BEST);
         runResults[RuleMiner.RESULT_WORST][r] = ga.getResult(nGens, RuleMiner.RESULT_WORST);
+        runResults[RuleMiner.RESULT_RANGE][r] = ga.getResult(nGens, RuleMiner.RESULT_RANGE);
         runResults[RuleMiner.RESULT_AVERAGE][r] = ga.getResult(nGens, RuleMiner.RESULT_AVERAGE);
         runResults[RuleMiner.RESULT_SUM][r] = ga.getResult(nGens, RuleMiner.RESULT_SUM);
     }
@@ -519,16 +520,7 @@ public class GARuleMiner {
         sb.append(',');
         sb.append("Mutation Rate");
         sb.append(',');
-        sb.append("Avg Best Fitness");
-        sb.append(',');
-        sb.append("Avg Worst Fitness");
-        sb.append(',');
-        sb.append("Avg Fitness Range");
-        sb.append(',');
-        sb.append("Avg Avg Fitness");
-        sb.append(',');
-        sb.append("Avg Total Fitness");
-        sb.append('\n');
+        sb.append(getResultHeaders());
         pw.write(sb.toString());
     }
 
@@ -552,16 +544,7 @@ public class GARuleMiner {
         sb.append(',');
         sb.append("Population Size");
         sb.append(',');
-        sb.append("Avg Best Fitness");
-        sb.append(',');
-        sb.append("Avg Worst Fitness");
-        sb.append(',');
-        sb.append("Avg Fitness Range");
-        sb.append(',');
-        sb.append("Avg Avg Fitness");
-        sb.append(',');
-        sb.append("Avg Total Fitness");
-        sb.append('\n');
+        sb.append(getResultHeaders());
         pw.write(sb.toString());
     }
 
@@ -588,16 +571,7 @@ public class GARuleMiner {
         sb.append(',');
         sb.append("No of Generations");
         sb.append(',');
-        sb.append("Avg Best Fitness");
-        sb.append(',');
-        sb.append("Avg Worst Fitness");
-        sb.append(',');
-        sb.append("Avg Fitness Range");
-        sb.append(',');
-        sb.append("Avg Avg Fitness");
-        sb.append(',');
-        sb.append("Avg Total Fitness");
-        sb.append('\n');
+        sb.append(getResultHeaders());
         pw.write(sb.toString());
     }
 
@@ -621,36 +595,95 @@ public class GARuleMiner {
         sb.append(',');
         sb.append("No of Rules");
         sb.append(',');
-        sb.append("Avg Best Fitness");
-        sb.append(',');
-        sb.append("Avg Worst Fitness");
-        sb.append(',');
-        sb.append("Avg Fitness Range");
-        sb.append(',');
-        sb.append("Avg Avg Fitness");
-        sb.append(',');
-        sb.append("Avg Total Fitness");
-        sb.append('\n');
+        sb.append(getResultHeaders());
         pw.write(sb.toString());
     }
-
-    private static void writeResults(int id, double rate) {
+    
+    private static String getResultHeaders(){
         StringBuilder sb = new StringBuilder();
+        sb.append("Avg Best Fitness (ABF)");
+        sb.append(',');
+        sb.append("ABF Confidence Lower");
+        sb.append(',');
+        sb.append("ABF Confidence Upper");
+        sb.append(',');
+        sb.append("Avg Worst Fitness (AWF)");
+        sb.append(',');
+        sb.append("AWF Confidence Lower");
+        sb.append(',');
+        sb.append("AWF Confidence Upper");
+        sb.append(',');
+        sb.append("Avg Fitness Range (AFR)");
+        sb.append(',');
+        sb.append("AFR Confidence Lower");
+        sb.append(',');
+        sb.append("AFR Confidence Upper");
+        sb.append(',');
+        sb.append("Avg Avg Fitness (AAF)");
+        sb.append(',');
+        sb.append("AAF Confidence Lower");
+        sb.append(',');
+        sb.append("AAF Confidence Upper");
+        sb.append(',');
+        sb.append("Avg Total Fitness (ATF)");
+        sb.append(',');
+        sb.append("ATF Confidence Lower");
+        sb.append(',');
+        sb.append("ATF Confidence Upper");
+        sb.append('\n');
+        return sb.toString();
+    }
+    
+    private static void writeResults(int id, double rate) {
+        
+        // get averages of the results
         double best = calcAvg(runResults[RuleMiner.RESULT_BEST]),
-                worst = calcAvg(runResults[RuleMiner.RESULT_WORST]);
+                worst = calcAvg(runResults[RuleMiner.RESULT_WORST]),
+                range = calcAvg(runResults[RuleMiner.RESULT_RANGE]),
+                avg = calcAvg(runResults[RuleMiner.RESULT_AVERAGE]),
+                sum = calcAvg(runResults[RuleMiner.RESULT_SUM]);
+        
+        // calc confidence of the averages 
+        double[] bestConf = calcConfidenceBoundaries(runResults[RuleMiner.RESULT_BEST]),
+                worstConf = calcConfidenceBoundaries(runResults[RuleMiner.RESULT_WORST]),
+                rangeConf = calcConfidenceBoundaries(runResults[RuleMiner.RESULT_RANGE]),
+                avgConf = calcConfidenceBoundaries(runResults[RuleMiner.RESULT_AVERAGE]),
+                sumConf = calcConfidenceBoundaries(runResults[RuleMiner.RESULT_SUM]);
+        
+        StringBuilder sb = new StringBuilder();
         sb.append(id);
         sb.append(',');
         sb.append(String.valueOf(rate));
         sb.append(',');
         sb.append(String.valueOf(best));
         sb.append(',');
+        sb.append(String.valueOf(bestConf[0]));
+        sb.append(',');
+        sb.append(String.valueOf(bestConf[1]));
+        sb.append(',');
         sb.append(String.valueOf(worst));
         sb.append(',');
-        sb.append(String.valueOf((best - worst)));
+        sb.append(String.valueOf(worstConf[0]));
         sb.append(',');
-        sb.append(String.valueOf(calcAvg(runResults[RuleMiner.RESULT_AVERAGE])));
+        sb.append(String.valueOf(worstConf[1]));
         sb.append(',');
-        sb.append(String.valueOf(calcAvg(runResults[RuleMiner.RESULT_SUM])));
+        sb.append(String.valueOf(range));
+        sb.append(',');
+        sb.append(String.valueOf(rangeConf[0]));
+        sb.append(',');
+        sb.append(String.valueOf(rangeConf[1]));
+        sb.append(',');
+        sb.append(String.valueOf(avg));
+        sb.append(',');
+        sb.append(String.valueOf(avgConf[0]));
+        sb.append(',');
+        sb.append(String.valueOf(avgConf[1]));
+        sb.append(',');
+        sb.append(String.valueOf(sum));
+        sb.append(',');
+        sb.append(String.valueOf(sumConf[0]));
+        sb.append(',');
+        sb.append(String.valueOf(sumConf[1]));
         sb.append('\n');
         pw.write(sb.toString());
     }
@@ -731,7 +764,7 @@ public class GARuleMiner {
                 }
                 sb.append(',');
                 sb.append(String.valueOf(ruleFitness));
-                
+
                 if ((r + 1) != rules.size()) {
                     sb.append('\n');
                 }
@@ -823,8 +856,27 @@ public class GARuleMiner {
             clip.open(audioInputStream);
             clip.start();
         } catch (Exception ex) {
-            ex.printStackTrace();
+            System.err.println(ex.toString());
         }
+    }
+
+    private static double[] calcConfidenceBoundaries(double[] arr) {
+
+        // calculate the mean value
+        double mean = calcAvg(arr);
+
+        // calculate standard deviation
+        double squaredDifferenceSum = 0.0;
+        for (double num : arr) {
+            squaredDifferenceSum += (num - mean) * (num - mean);
+        }
+        double variance = squaredDifferenceSum / arr.length;
+        double standardDeviation = Math.sqrt(variance);
+
+        // value for 95% confidence interval
+        double confidenceLevel = 1.96;
+        double temp = confidenceLevel * standardDeviation / Math.sqrt(arr.length);
+        return new double[]{((mean - temp) - mean) * -1, (mean + temp) - mean};
     }
     //END_Utils
 }

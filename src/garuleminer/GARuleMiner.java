@@ -31,7 +31,7 @@ public class GARuleMiner {
             N_GENS_MIN = 1,
             N_GENS_MAX = 200,
             N_GENS_RES_STEP = 1,
-            N_RUNS = 50,
+            N_RUNS = 10,
             N_RULES_MIN = 1,
             N_RULES_MAX = 100,
             N_RULES_RES_STEP = 1,
@@ -59,7 +59,8 @@ public class GARuleMiner {
     private static final int TEST_MUT = 1,
             TEST_POP = 2,
             TEST_GENS = 3,
-            TEST_RULES = 4;
+            TEST_RULES = 4,
+            TEST_ALL = 5;
 
     //Imported Data
     private static Rule[] data;
@@ -156,6 +157,7 @@ public class GARuleMiner {
             System.out.println(TEST_POP + ". Population size variance test");
             System.out.println(TEST_GENS + ". Number of generations variance test");
             System.out.println(TEST_RULES + ". Number of rules (chromosomes) variance test");
+            System.out.println(TEST_ALL + ". All of the above");
 
             selectedTestOption = scanner.nextInt();
 
@@ -176,6 +178,17 @@ public class GARuleMiner {
                     inputValid = true;
                     break;
                 case TEST_RULES:
+                    System.out.println("Starting number of rules variance test");
+                    runNRulesVarianceTest();
+                    inputValid = true;
+                    break;
+                case TEST_ALL:
+                    System.out.println("Starting mutation rate variance test");
+                    runMutationVarianceTest();
+                    System.out.println("Starting population size variance test");
+                    runPopSizeVarianceTest();
+                    System.out.println("Starting number of generations variance test");
+                    runNGensVarianceTest();
                     System.out.println("Starting number of rules variance test");
                     runNRulesVarianceTest();
                     inputValid = true;
@@ -346,7 +359,6 @@ public class GARuleMiner {
             ga = new RuleMiner(popSize, nGens, data, nRules);
         }
 
-        //RuleMiner ga = new RuleMiner(popSize, nGens, data, nRules);
         chromSize = ga.getChromosomeSize();
         initMutationRates(popSize, chromSize);
 
@@ -598,8 +610,8 @@ public class GARuleMiner {
         sb.append(getResultHeaders());
         pw.write(sb.toString());
     }
-    
-    private static String getResultHeaders(){
+
+    private static String getResultHeaders() {
         StringBuilder sb = new StringBuilder();
         sb.append("Avg Best Fitness (ABF)");
         sb.append(',');
@@ -633,23 +645,23 @@ public class GARuleMiner {
         sb.append('\n');
         return sb.toString();
     }
-    
+
     private static void writeResults(int id, double rate) {
-        
+
         // get averages of the results
         double best = calcAvg(runResults[RuleMiner.RESULT_BEST]),
                 worst = calcAvg(runResults[RuleMiner.RESULT_WORST]),
                 range = calcAvg(runResults[RuleMiner.RESULT_RANGE]),
                 avg = calcAvg(runResults[RuleMiner.RESULT_AVERAGE]),
                 sum = calcAvg(runResults[RuleMiner.RESULT_SUM]);
-        
+
         // calc confidence of the averages 
         double[] bestConf = calcConfidenceBoundaries(runResults[RuleMiner.RESULT_BEST]),
                 worstConf = calcConfidenceBoundaries(runResults[RuleMiner.RESULT_WORST]),
                 rangeConf = calcConfidenceBoundaries(runResults[RuleMiner.RESULT_RANGE]),
                 avgConf = calcConfidenceBoundaries(runResults[RuleMiner.RESULT_AVERAGE]),
                 sumConf = calcConfidenceBoundaries(runResults[RuleMiner.RESULT_SUM]);
-        
+
         StringBuilder sb = new StringBuilder();
         sb.append(id);
         sb.append(',');
@@ -855,6 +867,7 @@ public class GARuleMiner {
             Clip clip = AudioSystem.getClip();
             clip.open(audioInputStream);
             clip.start();
+            Thread.sleep(2500);
         } catch (Exception ex) {
             System.err.println(ex.toString());
         }

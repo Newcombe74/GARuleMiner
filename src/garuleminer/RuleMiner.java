@@ -21,6 +21,8 @@ public class RuleMiner extends GeneticAlgorithm {
 
     public RuleMiner(Rule[] ruleBase) {
         this.dataRules = randomiseRuleBase(ruleBase);
+        this.conditionSize = calcConditionSize();
+        super.chromosomeSize = calcChromSize();
     }
 
     public RuleMiner(int populationSize, int numberOfGenerations,

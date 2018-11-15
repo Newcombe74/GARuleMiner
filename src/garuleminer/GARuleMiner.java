@@ -34,7 +34,7 @@ public class GARuleMiner {
             N_GENS_MIN = 1,
             N_GENS_MAX = 200,
             N_GENS_RES_STEP = 1,
-            N_RUNS = 5,
+            N_RUNS = 1,
             N_RULES_MIN = 1,
             N_RULES_MAX = 100,
             N_RULES_RES_STEP = 1,
@@ -42,11 +42,11 @@ public class GARuleMiner {
     //Population
     private static int[] popSizeVariations;
     private static int popSizeIdx = 0;
-    private static int popSize = 500;
+    private static int popSize = 100;
     //Generations
     private static int[] nGensVariations;
     private static int nGensIdx = 0;
-    private static int nGens = 200;
+    private static int nGens = 50;
     //Mutation
     private static double[] mutationRateVariations;
     private static int mutationRateIdx = 0;
@@ -56,7 +56,7 @@ public class GARuleMiner {
     private static int[] nRulesVariations;
     private static int nRulesIdx = 0;
     private static int chromSize = 0;
-    private static int nRules = 40;
+    private static int nRules = 10;
 
     //Test Option Indexes
     private static final int TEST_MUT = 1,
@@ -148,7 +148,7 @@ public class GARuleMiner {
             }
         }
 
-        ringBell();
+        //ringBell();
     }
 
     private static void getUserValidationMethodChoice() throws FileNotFoundException {
@@ -829,8 +829,8 @@ public class GARuleMiner {
 
                 nFitRules++;
             }
-            
-            if((r + 1) == rules.size()){
+
+            if ((r + 1) == rules.size()) {
                 sb.append('\n');
             }
         }
@@ -846,6 +846,7 @@ public class GARuleMiner {
         Rule rule;
         FloatRuleMiner rm = new FloatRuleMiner(data);
         int[] ruleFitnesses = rm.calcRuleFitness(rules, validationSet);
+        int condPairs = rm.getConditionSize() / 2;
         int ruleFitness, nFitRules = 0;
 
         StringBuilder sb = new StringBuilder();
@@ -854,7 +855,15 @@ public class GARuleMiner {
         sb.append(',');
         sb.append(String.valueOf(id));
         sb.append('\n');
-        sb.append("Rule");
+        for (int g = 0; g < condPairs; g++) {
+            sb.append("Cond");
+            sb.append(String.valueOf(g + 1));
+            sb.append(',');
+            sb.append("Tol");
+            sb.append(String.valueOf(g + 1));
+            sb.append(',');
+        }
+        sb.append("Output");
         sb.append(',');
         sb.append("Fitness Awarded");
         sb.append('\n');
@@ -866,7 +875,7 @@ public class GARuleMiner {
                 float[] realNumArr = rule.getRealNumArr();
                 for (float realNum : realNumArr) {
                     sb.append(String.valueOf(realNum));
-                    sb.append(' ');
+                    sb.append(',');
                 }
                 sb.append(String.valueOf(rule.getOutput()));
                 sb.append(',');
@@ -879,6 +888,9 @@ public class GARuleMiner {
                 nFitRules++;
             }
             
+            if ((r + 1) == rules.size()) {
+                sb.append('\n');
+            }
         }
         sb.append(String.valueOf(nFitRules));
         sb.append(',');

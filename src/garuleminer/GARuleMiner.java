@@ -20,6 +20,8 @@ import javax.sound.sampled.Clip;
 
 import geneticalgorithm.*;
 import java.io.PrintWriter;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  *
@@ -34,7 +36,7 @@ public class GARuleMiner {
             N_GENS_MIN = 1,
             N_GENS_MAX = 200,
             N_GENS_RES_STEP = 1,
-            N_RUNS = 1,
+            N_RUNS = 20,
             N_RULES_MIN = 1,
             N_RULES_MAX = 100,
             N_RULES_RES_STEP = 1,
@@ -42,11 +44,11 @@ public class GARuleMiner {
     //Population
     private static int[] popSizeVariations;
     private static int popSizeIdx = 0;
-    private static int popSize = 100;
+    private static int popSize = 200;
     //Generations
     private static int[] nGensVariations;
     private static int nGensIdx = 0;
-    private static int nGens = 50;
+    private static int nGens = 100;
     //Mutation
     private static double[] mutationRateVariations;
     private static int mutationRateIdx = 0;
@@ -76,6 +78,7 @@ public class GARuleMiner {
 
     //Results
     private static double[][] runResults = new double[5][N_RUNS];
+    private static double[][][] genResults;
     private static PrintWriter pw;
 
     /**
@@ -126,6 +129,9 @@ public class GARuleMiner {
             System.out.println("Please enter the number to either:");
             System.out.println(1 + ". Mine Data For Rules");
             System.out.println(2 + ". Test Hyperparameter Variances");
+            if (selectedDataOption == 3) {
+                System.out.println(3 + ". Test Method Variances");
+            }
 
             selectedDataOption = scanner.nextInt();
 
@@ -142,6 +148,14 @@ public class GARuleMiner {
                 case 2:
                     getUserTestHyperparamsChoice();
                     inputValid = true;
+                    break;
+                case 3:
+                    if (selectedDataOption == 3) {
+                        getUserTestMethodsChoice();
+                        inputValid = true;
+                    } else {
+                        System.out.println("Input invalid");
+                    }
                     break;
                 default:
                     System.out.println("Input invalid");
@@ -229,6 +243,58 @@ public class GARuleMiner {
                     runNGensVarianceTest();
                     System.out.println("Starting number of rules variance test");
                     runNRulesVarianceTest();
+                    inputValid = true;
+                    break;
+                default:
+                    System.out.println("Input invalid");
+            }
+        }
+    }
+
+    private static void getUserTestMethodsChoice() throws FileNotFoundException {
+        Scanner scanner = new Scanner(System.in);
+
+        boolean inputValid = false;
+        while (!inputValid) {
+            System.out.println("Please enter the number of the test you wish to run:");
+            System.out.println(1 + ". Mutation Creep");
+            System.out.println(2 + ". Mutation Normal Distribution");
+            System.out.println(3 + ". Crossover Regular");
+            System.out.println(4 + ". Crossover Blend Random");
+            System.out.println(5 + ". Crossover Blend Random Variance");
+            System.out.println(6 + ". Crossover Canon Blend");
+
+            selectedTestOption = scanner.nextInt();
+
+            switch (selectedTestOption) {
+                case 1:
+                    System.out.println("Starting mutation creep test");
+                    runMutationCreepTest();
+                    inputValid = true;
+                    break;
+                case 2:
+                    System.out.println("Starting mutation normal distribution test");
+                    runMutationNormalDistTest();
+                    inputValid = true;
+                    break;
+                case 3:
+                    System.out.println("Starting crossover regular test");
+                    runCrossoverRegTest();
+                    inputValid = true;
+                    break;
+                case 4:
+                    System.out.println("Starting crossover blend random test");
+                    runCrossoverBlendRandTest();
+                    inputValid = true;
+                    break;
+                case 5:
+                    System.out.println("Starting crossover blend random variance test");
+                    runCrossoverBlendRandVarianceTest();
+                    inputValid = true;
+                    break;
+                case 6:
+                    System.out.println("Starting crossover blend canon test");
+                    runCrossoverBlendCanonTest();
                     inputValid = true;
                     break;
                 default:
@@ -436,9 +502,9 @@ public class GARuleMiner {
 
                 ga.run(RuleMiner.SELECTION_TOURNEMENT);
 
-                recordResults(ga, r);
+                recordRunResults(ga, r);
             }
-            writeResults(m + 1, mutationRateVariations[m]);
+            writeRunResults(m + 1, mutationRateVariations[m]);
 
             outputPercComplete(m, mutationRateVariations.length);
         }
@@ -467,9 +533,9 @@ public class GARuleMiner {
 
                 ga.run(GeneticAlgorithm.SELECTION_TOURNEMENT);
 
-                recordResults(ga, r);
+                recordRunResults(ga, r);
             }
-            writeResults(p + 1, popSizeVariations[p]);
+            writeRunResults(p + 1, popSizeVariations[p]);
 
             outputPercComplete(p, popSizeVariations.length);
         }
@@ -496,9 +562,9 @@ public class GARuleMiner {
 
                 ga.run(GeneticAlgorithm.SELECTION_TOURNEMENT);
 
-                recordResults(ga, r);
+                recordRunResults(ga, r);
             }
-            writeResults(g + 1, nGensVariations[g]);
+            writeRunResults(g + 1, nGensVariations[g]);
 
             outputPercComplete(g, nGensVariations.length);
         }
@@ -524,9 +590,9 @@ public class GARuleMiner {
 
                 ga.run(GeneticAlgorithm.SELECTION_TOURNEMENT);
 
-                recordResults(ga, r);
+                recordRunResults(ga, r);
             }
-            writeResults(n + 1, nRulesVariations[n]);
+            writeRunResults(n + 1, nRulesVariations[n]);
 
             outputPercComplete(n, nRulesVariations.length);
         }
@@ -535,12 +601,178 @@ public class GARuleMiner {
         pw.close();
     }
 
-    private static void recordResults(RuleMiner ga, int r) {
+    private static void runMutationCreepTest() throws FileNotFoundException {
+        FloatRuleMiner ga = new FloatRuleMiner(popSize, nGens, data, nRules);
+
+        chromSize = ga.getChromosomeSize();
+        initMethodResultsCSV("MutationCreepResults.csv");
+
+        genResults = new double[nGens][RuleMiner.N_RESULT_SETS][N_RUNS];
+
+        for (int r = 0; r < N_RUNS; r++) {
+            ga.runHoldout(GeneticAlgorithm.SELECTION_TOURNEMENT);
+
+            for (int g = 0; g < nGens; g++) {
+                recordVGenResults(ga, g, r);
+            }
+
+            outputPercComplete(r, N_RUNS);
+        }
+
+        for (int g = 0; g < nGens; g++) {
+            writeGenResults(g + 1, g + 1);
+        }
+
+        System.out.println("Test complete");
+        pw.close();
+    }
+
+    private static void runMutationNormalDistTest() throws FileNotFoundException {
+
+        RuleMiner ga;
+        if (dataType == DATA_TYPE_FLOAT) {
+            ga = new FloatRuleMiner(popSize, nGens, data, nRules);
+        } else {
+            ga = new RuleMiner(popSize, nGens, data, nRules);
+        }
+
+        chromSize = ga.getChromosomeSize();
+        initMutationRates(popSize, chromSize);
+
+        initMutationsCSV("MutationRateVarianceResults.csv");
+
+        for (int m = 0; m < mutationRateVariations.length; m++) {
+            for (int r = 0; r < N_RUNS; r++) {
+                ga.setProbabilityOfMutation(mutationRateVariations[m]);
+
+                ga.run(RuleMiner.SELECTION_TOURNEMENT);
+
+                recordRunResults(ga, r);
+            }
+            writeRunResults(m + 1, mutationRateVariations[m]);
+
+            outputPercComplete(m, mutationRateVariations.length);
+        }
+
+        System.out.println("Test complete");
+        pw.close();
+    }
+
+    private static void runCrossoverRegTest() throws FileNotFoundException {
+        FloatRuleMiner ga = new FloatRuleMiner(popSize, nGens, data, nRules);
+
+        chromSize = ga.getChromosomeSize();
+        initMethodResultsCSV("CrossoverRegularResults.csv");
+
+        genResults = new double[nGens][RuleMiner.N_RESULT_SETS][N_RUNS];
+
+        for (int r = 0; r < N_RUNS; r++) {
+            ga.runHoldout(GeneticAlgorithm.SELECTION_TOURNEMENT);
+
+            for (int g = 0; g < nGens; g++) {
+                recordVGenResults(ga, g, r);
+            }
+
+            outputPercComplete(r, N_RUNS);
+        }
+
+        for (int g = 0; g < nGens; g++) {
+            writeGenResults(g + 1, g + 1);
+        }
+
+        System.out.println("Test complete");
+        pw.close();
+    }
+
+    private static void runCrossoverBlendRandTest() throws FileNotFoundException {
+        FloatRuleMiner ga = new FloatRuleMiner(popSize, nGens, data, nRules);
+        ga.setCrossoverMethod(FloatRuleMiner.CROSS_BLEND_RAND);
+        chromSize = ga.getChromosomeSize();
+        initMethodResultsCSV("CrossoverBlendRandResults.csv");
+
+        genResults = new double[nGens][RuleMiner.N_RESULT_SETS][N_RUNS];
+
+        for (int r = 0; r < N_RUNS; r++) {
+            ga.runHoldout(GeneticAlgorithm.SELECTION_TOURNEMENT);
+
+            for (int g = 0; g < nGens; g++) {
+                recordVGenResults(ga, g, r);
+            }
+
+            outputPercComplete(r, N_RUNS);
+        }
+
+        for (int g = 0; g < nGens; g++) {
+            writeGenResults(g + 1, g + 1);
+        }
+
+        System.out.println("Test complete");
+        pw.close();
+    }
+
+    private static void runCrossoverBlendRandVarianceTest() throws FileNotFoundException {
+        FloatRuleMiner ga = new FloatRuleMiner(popSize, nGens, data, nRules);
+        ga.setCrossoverMethod(FloatRuleMiner.CROSS_BLEND_RAND);
+        chromSize = ga.getChromosomeSize();
+        initBlendCSV("CrossoverBlendRandVarianceResults.csv");
+
+        for (int b = 0; b <= 50; b++) {
+            for (int r = 0; r < N_RUNS; r++) {
+                ga.setBlendPerc(b);
+
+                ga.runHoldout(GeneticAlgorithm.SELECTION_TOURNEMENT);
+
+                recordRunResults(ga, r);
+            }
+            writeRunResults(b + 1, b);
+
+            outputPercComplete(b, 50);
+        }
+
+        System.out.println("Test complete");
+        pw.close();
+    }
+
+    private static void runCrossoverBlendCanonTest() throws FileNotFoundException {
+        FloatRuleMiner ga = new FloatRuleMiner(popSize, nGens, data, nRules);
+
+        chromSize = ga.getChromosomeSize();
+        initMethodResultsCSV("CrossoverRegularResults.csv");
+
+        genResults = new double[nGens][RuleMiner.N_RESULT_SETS][N_RUNS];
+
+        for (int r = 0; r < N_RUNS; r++) {
+            ga.runHoldout(GeneticAlgorithm.SELECTION_TOURNEMENT);
+
+            for (int g = 0; g < nGens; g++) {
+                recordVGenResults(ga, g, r);
+            }
+
+            outputPercComplete(r, N_RUNS);
+        }
+
+        for (int g = 0; g < nGens; g++) {
+            writeGenResults(g + 1, g + 1);
+        }
+
+        System.out.println("Test complete");
+        pw.close();
+    }
+
+    private static void recordRunResults(RuleMiner ga, int r) {
         runResults[RuleMiner.RESULT_BEST][r] = ga.getResult(nGens, RuleMiner.RESULT_BEST);
         runResults[RuleMiner.RESULT_WORST][r] = ga.getResult(nGens, RuleMiner.RESULT_WORST);
         runResults[RuleMiner.RESULT_RANGE][r] = ga.getResult(nGens, RuleMiner.RESULT_RANGE);
         runResults[RuleMiner.RESULT_AVERAGE][r] = ga.getResult(nGens, RuleMiner.RESULT_AVERAGE);
         runResults[RuleMiner.RESULT_SUM][r] = ga.getResult(nGens, RuleMiner.RESULT_SUM);
+    }
+
+    private static void recordVGenResults(FloatRuleMiner ga, int g, int r) {
+        genResults[g][RuleMiner.RESULT_BEST][r] = ga.getValidationResult(g + 1, RuleMiner.RESULT_BEST);
+        genResults[g][RuleMiner.RESULT_WORST][r] = ga.getValidationResult(g + 1, RuleMiner.RESULT_WORST);
+        genResults[g][RuleMiner.RESULT_RANGE][r] = ga.getValidationResult(g + 1, RuleMiner.RESULT_RANGE);
+        genResults[g][RuleMiner.RESULT_AVERAGE][r] = ga.getValidationResult(g + 1, RuleMiner.RESULT_AVERAGE);
+        genResults[g][RuleMiner.RESULT_SUM][r] = ga.getValidationResult(g + 1, RuleMiner.RESULT_SUM);
     }
     //END_TESTS
 
@@ -677,6 +909,66 @@ public class GARuleMiner {
         pw.write(sb.toString());
     }
 
+    private static void initBlendCSV(String name) throws FileNotFoundException {
+        pw = new PrintWriter(new File(name));
+        StringBuilder sb = new StringBuilder();
+        sb.append("Population Size = ");
+        sb.append(String.valueOf(popSize));
+        sb.append('\n');
+        sb.append("No of Generations = ");
+        sb.append(String.valueOf(nGens));
+        sb.append('\n');
+        sb.append("Chromosome Size = ");
+        sb.append(String.valueOf(chromSize));
+        sb.append('\n');
+        sb.append("No of Rules = ");
+        sb.append(String.valueOf(nRules));
+        sb.append('\n');
+        sb.append("Probability of Mutation = ");
+        sb.append(String.valueOf(mutationRate));
+        sb.append('\n');
+        sb.append("No of Runs = ");
+        sb.append(String.valueOf(N_RUNS));
+        sb.append('\n');
+        sb.append('\n');
+        sb.append("Id");
+        sb.append(',');
+        sb.append("Blend Percentage");
+        sb.append(',');
+        sb.append(getResultHeaders());
+        pw.write(sb.toString());
+    }
+
+    private static void initMethodResultsCSV(String name) throws FileNotFoundException {
+        pw = new PrintWriter(new File(name));
+        StringBuilder sb = new StringBuilder();
+        sb.append("Population Size = ");
+        sb.append(String.valueOf(popSize));
+        sb.append('\n');
+        sb.append("No of Generations = ");
+        sb.append(String.valueOf(nGens));
+        sb.append('\n');
+        sb.append("Chromosome Size = ");
+        sb.append(String.valueOf(chromSize));
+        sb.append('\n');
+        sb.append("No of Rules = ");
+        sb.append(String.valueOf(nRules));
+        sb.append('\n');
+        sb.append("Probability of Mutation = ");
+        sb.append(String.valueOf(mutationRate));
+        sb.append('\n');
+        sb.append("No of Runs = ");
+        sb.append(String.valueOf(N_RUNS));
+        sb.append('\n');
+        sb.append('\n');
+        sb.append("Id");
+        sb.append(',');
+        sb.append("Generation");
+        sb.append(',');
+        sb.append(getResultHeaders());
+        pw.write(sb.toString());
+    }
+
     private static String getResultHeaders() {
         StringBuilder sb = new StringBuilder();
         sb.append("Avg Best Fitness (ABF)");
@@ -702,7 +994,7 @@ public class GARuleMiner {
         return sb.toString();
     }
 
-    private static void writeResults(int id, double rate) {
+    private static void writeRunResults(int id, double rate) {
 
         // get averages of the results
         double best = calcAvg(runResults[RuleMiner.RESULT_BEST]),
@@ -722,6 +1014,51 @@ public class GARuleMiner {
         sb.append(id);
         sb.append(',');
         sb.append(String.valueOf(rate));
+        sb.append(',');
+        sb.append(String.valueOf(best));
+        sb.append(',');
+        sb.append(String.valueOf(bestConf));
+        sb.append(',');
+        sb.append(String.valueOf(worst));
+        sb.append(',');
+        sb.append(String.valueOf(worstConf));
+        sb.append(',');
+        sb.append(String.valueOf(range));
+        sb.append(',');
+        sb.append(String.valueOf(rangeConf));
+        sb.append(',');
+        sb.append(String.valueOf(avg));
+        sb.append(',');
+        sb.append(String.valueOf(avgConf));
+        sb.append(',');
+        sb.append(String.valueOf(sum));
+        sb.append(',');
+        sb.append(String.valueOf(sumConf));
+        sb.append('\n');
+        pw.write(sb.toString());
+    }
+
+    private static void writeGenResults(int id, int g) {
+        int gIdx = g - 1;
+
+        // get averages of the results
+        double best = calcAvg(genResults[gIdx][RuleMiner.RESULT_BEST]),
+                worst = calcAvg(genResults[gIdx][RuleMiner.RESULT_WORST]),
+                range = calcAvg(genResults[gIdx][RuleMiner.RESULT_RANGE]),
+                avg = calcAvg(genResults[gIdx][RuleMiner.RESULT_AVERAGE]),
+                sum = calcAvg(genResults[gIdx][RuleMiner.RESULT_SUM]);
+
+        // calc confidence of the averages 
+        double bestConf = calcConfidenceBoundaries(genResults[gIdx][RuleMiner.RESULT_BEST]),
+                worstConf = calcConfidenceBoundaries(genResults[gIdx][RuleMiner.RESULT_WORST]),
+                rangeConf = calcConfidenceBoundaries(genResults[gIdx][RuleMiner.RESULT_RANGE]),
+                avgConf = calcConfidenceBoundaries(genResults[gIdx][RuleMiner.RESULT_AVERAGE]),
+                sumConf = calcConfidenceBoundaries(genResults[gIdx][RuleMiner.RESULT_SUM]);
+
+        StringBuilder sb = new StringBuilder();
+        sb.append(id);
+        sb.append(',');
+        sb.append(String.valueOf(g));
         sb.append(',');
         sb.append(String.valueOf(best));
         sb.append(',');
@@ -887,7 +1224,7 @@ public class GARuleMiner {
 
                 nFitRules++;
             }
-            
+
             if ((r + 1) == rules.size()) {
                 sb.append('\n');
             }

@@ -20,10 +20,10 @@ public class FloatRuleMiner extends RuleMiner {
     public static final int VALID_NONE = 1, VALID_HOLD = 2, VALID_K_FOLD = 3;
     private int holdTrainDist = 80, kFolds = 5, kFoldTrainDist = 67;
     //Crossover
-    public final int CROSS_REG = 1, CROSS_BLEND_GENE = 2,
-            CROSS_BLEND_RULE = 3, CROSS_BLEND_CANON = 4;
+    public static final int CROSS_REG = 1, CROSS_BLEND_RAND = 2, CROSS_BLEND_CANON = 4;
+    private int blendPerc = 10;
     //Mutation
-    public final int MUT_CREEP = 1, MUT_NORM_DIST = 2;
+    public static final int MUT_CREEP = 1, MUT_NORM_DIST = 2;
     private float mutCreepTol = (float) 0.1;
     //Gene Types
     private final int GENE_COND = 1, GENE_OUT = 2, GENE_TOL = 3;
@@ -36,11 +36,14 @@ public class FloatRuleMiner extends RuleMiner {
     //Holdout an k-fold
     protected Rule[] tDataRuleSet, vHoldDataRuleSet, vKFoldDataRuleSet;
     protected Rule[][] kDataRuleSets;
+    protected float[][] validationResults;
+    protected Individual validationPop[];
 
     public FloatRuleMiner(Rule[] ruleBase) {
         super(ruleBase);
         initHoldoutRules();
         initKRules();
+        this.validationResults = new float[this.numberOfGenerations][N_RESULT_SETS];
     }
 
     public FloatRuleMiner(int populationSize, int numberOfGenerations,
@@ -48,6 +51,7 @@ public class FloatRuleMiner extends RuleMiner {
         super(populationSize, numberOfGenerations, ruleBase, nRules);
         initHoldoutRules();
         initKRules();
+        this.validationResults = new float[this.numberOfGenerations][N_RESULT_SETS];
     }
 
     public FloatRuleMiner(int populationSize, int numberOfGenerations,
@@ -57,20 +61,24 @@ public class FloatRuleMiner extends RuleMiner {
                 ruleBase, nRules);
         initHoldoutRules();
         initKRules();
+        this.validationResults = new float[this.numberOfGenerations][N_RESULT_SETS];
     }
-    
-    public void runHoldout(int selectionType){
+
+    public void runHoldout(int selectionType) {
         //INIT populations
         this.population = new Individual[populationSize];
         this.offspring = new Individual[populationSize];
-        
+        this.validationPop = new Individual[populationSize];
+
         //SET each individuals genes to be 1 or 0 at random
         initChromosomes();
 
         for (int g = 0; g < this.numberOfGenerations; g++) {
             this.population = calcFitness(this.population, this.tDataRuleSet);
+            this.validationPop = calcFitness(this.population, this.vHoldDataRuleSet);
 
             recordResults(g);
+            recordValidationResults(g);
 
             this.offspring = crossover();
 
@@ -80,8 +88,17 @@ public class FloatRuleMiner extends RuleMiner {
 
             this.population = selection(selectionType);
         }
-        
+
         this.population = calcFitness(this.population, this.vHoldDataRuleSet);
+    }
+
+    protected void recordValidationResults(int g) {
+        this.validationResults[g][RESULT_BEST] = bestFitness(this.validationPop);
+        this.validationResults[g][RESULT_WORST] = worstFitness(this.validationPop);
+        this.validationResults[g][RESULT_RANGE] = this.validationResults[g][RESULT_BEST]
+                - this.validationResults[g][RESULT_WORST];
+        this.validationResults[g][RESULT_AVERAGE] = avgFitness(this.validationPop);
+        this.validationResults[g][RESULT_SUM] = sumFitness(this.validationPop);
     }
 
     @Override
@@ -137,7 +154,7 @@ public class FloatRuleMiner extends RuleMiner {
         if (f == 0) {
             int foldSize = tlen / kFolds;
             int idx = 0, bound = foldSize, kIdx = 0, fIdx = 0;
-            
+
             //SET Training/Testing sets
             kDataRuleSets = new Rule[kFolds][foldSize];
             for (int r = 0; r < tlen; r++) {
@@ -170,12 +187,9 @@ public class FloatRuleMiner extends RuleMiner {
             case CROSS_REG:
                 //Crossover canonically
                 return crossoverRules();
-            case CROSS_BLEND_GENE:
+            case CROSS_BLEND_RAND:
                 //Blending single gene
-                return crossoverBlendSingle();
-            case CROSS_BLEND_RULE:
-                //Blending single rule
-                return crossoverBlendRules();
+                return crossoverBlendRandom();
             case CROSS_BLEND_CANON:
                 //Blending canonical cross
                 return crossoverBlendCanon();
@@ -203,68 +217,77 @@ public class FloatRuleMiner extends RuleMiner {
         return ret;
     }
 
-    private Individual[] crossoverBlendSingle() {
+    private Individual[] crossoverBlendRandom() {
+        final int child1 = 0, child2 = 1;
+
         ArrayList<Individual> children = new ArrayList<>();
         Object[][] crossoverGenes = new Object[2][super.chromosomeSize];
-        final int child1 = 0, child2 = 1;
-        int geneCounter = 0, ruleCounter = 0,
-                ruleSize = this.conditionSize + 1, crossoverPoint;
         Object[] parent1, parent2;
-        float blend;
 
-        for (int i = 0; i < populationSize - 1; i++) {
-            parent1 = population[i].getChromosome();
-            parent2 = population[(i + 1)].getChromosome();
+        double dblen = ((double) super.chromosomeSize / 100.00) * (double) this.blendPerc;
+        int ruleSize = this.conditionSize + 1, blen = (int) dblen,
+                cpIdx = 0;
+        int[] crossoverPoints = new int[blen];
+        float cp, blend;
+        boolean cpCheck = false;
 
-            crossoverPoint = new Random().nextInt(
-                    (super.chromosomeSize / this.nRules) - 1) + 1;
+        //Blend Parents into two children
+        if (blen > 0) {
+            for (int i = 0; i < populationSize - 1; i++) {
+                parent1 = population[i].getChromosome();
+                parent2 = population[(i + 1)].getChromosome();
 
-            for (int g = 0; g < super.chromosomeSize; g++) {
-                if (geneCounter == ruleSize) {
-                    ruleCounter++;
-                    geneCounter = 0;
+                //LOOP until crossover array is full
+                while (crossoverPoints[(int) blen - 1] == 0) {
+                    cp = new Random().nextInt(super.chromosomeSize) + 1;
+
+                    for (int c : crossoverPoints) {
+                        if (c == cp) {
+                            cpCheck = true;
+                        }
+                    }
+
+                    if ((((cp + 1) / ruleSize) % 2) != 0 && !cpCheck) {
+                        crossoverPoints[cpIdx++] = (int) cp;
+                    }
+                    cpCheck = false;
                 }
 
-                //TODO change a single gene that is not an output
-                //Perhaps blend more a variation 
-                if (ruleCounter == crossoverPoint) {
-                    blend = (float) ((Float) parent1[g] + (Float) parent2[g]) / 2;
-                    crossoverGenes[child1][g] = blend;
-                    crossoverGenes[child2][g] = blend;
-                } else {
-                    crossoverGenes[child1][g] = parent1[g];
-                    crossoverGenes[child2][g] = parent2[g];
+                for (int g = 0; g < super.chromosomeSize; g++) {
+                    for (int c : crossoverPoints) {
+                        if (c == g) {
+                            cpCheck = true;
+                        }
+                    }
+                    if (cpCheck) {
+                        blend = (float) ((Float) parent1[g] + (Float) parent2[g]) / 2;
+                        if (blend < 0) {
+                            blend *= -1;
+                        }
+                        crossoverGenes[child1][g] = blend;
+                        crossoverGenes[child2][g] = blend;
+                        cpCheck = false;
+                    } else {
+                        crossoverGenes[child1][g] = parent1[g];
+                        crossoverGenes[child2][g] = parent2[g];
+                    }
                 }
 
-                geneCounter++;
+                children.add(new Individual(crossoverGenes[child1]));
+                children.add(new Individual(crossoverGenes[child2]));
+
+                crossoverPoints = new int[blen];
+                cpIdx = 0;
             }
 
-            children.add(new Individual(crossoverGenes[child1]));
-            children.add(new Individual(crossoverGenes[child2]));
+            Individual[] ret = new Individual[children.size()];
+            for (int i = 0; i < ret.length; i++) {
+                ret[i] = children.get(i);
+            }
+            return ret;
+        } else {
+            return this.population;
         }
-
-        Individual[] ret = new Individual[children.size()];
-        for (int i = 0; i < ret.length; i++) {
-            ret[i] = children.get(i);
-        }
-        return ret;
-    }
-
-    private Individual[] crossoverBlendRules() {
-        ArrayList<Individual> children = new ArrayList<>();
-
-        for (int i = 0; i < populationSize - 1; i++) {
-            children.addAll(singlePointCrossover(
-                    population[i].getChromosome(),
-                    population[(i + 1)].getChromosome()));
-        }
-
-        Individual[] ret = new Individual[children.size()];
-
-        for (int i = 0; i < ret.length; i++) {
-            ret[i] = children.get(i);
-        }
-        return ret;
     }
 
     private Individual[] crossoverBlendCanon() {
@@ -369,7 +392,7 @@ public class FloatRuleMiner extends RuleMiner {
         }
         return ret;
     }
-    
+
     protected Individual[] calcFitness(Individual[] pop, Rule[] ruleset) {
         Individual[] ret = new Individual[pop.length];
 
@@ -393,7 +416,7 @@ public class FloatRuleMiner extends RuleMiner {
         }
         return ret;
     }
-    
+
     public int[] calcRuleFitness(ArrayList<Rule> indivRuleBase, Rule[] ruleset) {
         int ruleIdx;
 
@@ -577,4 +600,33 @@ public class FloatRuleMiner extends RuleMiner {
     public void setkDataRuleSets(Rule[][] kDataRuleSets) {
         this.kDataRuleSets = kDataRuleSets;
     }
+
+    public int getBlendPerc() {
+        return blendPerc;
+    }
+
+    public void setBlendPerc(int blendPerc) {
+        this.blendPerc = blendPerc;
+    }
+
+    public float[][] getValidationResults() {
+        return validationResults;
+    }
+
+    public void setValidationResults(float[][] validationResults) {
+        this.validationResults = validationResults;
+    }
+
+    public float getValidationResult(int generation, int resultType) {
+        return validationResults[generation - 1][resultType];
+    }
+
+    public Individual[] getValidationPop() {
+        return validationPop;
+    }
+
+    public void setValidationPop(Individual[] validationPop) {
+        this.validationPop = validationPop;
+    }
+
 }

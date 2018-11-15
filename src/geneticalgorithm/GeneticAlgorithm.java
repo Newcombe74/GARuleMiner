@@ -35,7 +35,7 @@ public class GeneticAlgorithm {
             RESULT_SUM = 4,
             N_RESULT_SETS = 5;
     protected float[][] results;
-    
+
     //START_CONSTRUCTORS
     public GeneticAlgorithm() {
     }
@@ -56,12 +56,12 @@ public class GeneticAlgorithm {
         this.results = new float[this.numberOfGenerations][N_RESULT_SETS];
     }
     //END_CONSTRUCTORS
-    
+
     public void run(int selectionType) {
         //INIT populations
         this.population = new Individual[populationSize];
         this.offspring = new Individual[populationSize];
-        
+
         //SET each individuals genes to be 1 or 0 at random
         initChromosomes();
 
@@ -78,20 +78,20 @@ public class GeneticAlgorithm {
 
             this.population = selection(selectionType);
         }
-        
+
         this.population = calcFitness(this.population);
     }
-    
-    protected void recordResults(int g){
+
+    protected void recordResults(int g) {
         this.results[g][RESULT_BEST] = bestFitness(this.population);
-            this.results[g][RESULT_WORST] = worstFitness(this.population);
-            this.results[g][RESULT_RANGE] = bestFitness(this.population) 
-                    - worstFitness(this.population);
-            this.results[g][RESULT_AVERAGE] = avgFitness(this.population);
-            this.results[g][RESULT_SUM] = sumFitness(this.population);
+        this.results[g][RESULT_WORST] = worstFitness(this.population);
+        this.results[g][RESULT_RANGE] = this.results[g][RESULT_BEST]
+                - this.results[g][RESULT_WORST];
+        this.results[g][RESULT_AVERAGE] = avgFitness(this.population);
+        this.results[g][RESULT_SUM] = sumFitness(this.population);
     }
-    
-    protected void initChromosomes(){
+
+    protected void initChromosomes() {
         //SET to random 1s and 0s by default
         for (int i = 0; i < this.population.length; i++) {
             Object[] genes = new Object[this.chromosomeSize];
@@ -102,7 +102,7 @@ public class GeneticAlgorithm {
             this.population[i] = new Individual(genes);
         }
     }
-    
+
     //START_Selection
     protected Individual[] selection(int selectionType) {
         switch (selectionType) {
@@ -259,11 +259,11 @@ public class GeneticAlgorithm {
         return null;
     }
 
-    private int avgFitness(Individual[] pop) {
+    protected int avgFitness(Individual[] pop) {
         return sumFitness(pop) / pop.length;
     }
 
-    private int bestFitness(Individual[] pop) {
+    protected int bestFitness(Individual[] pop) {
         int ret = 0;
         for (Individual i : pop) {
             if (i.getFitness() > ret) {
@@ -272,8 +272,8 @@ public class GeneticAlgorithm {
         }
         return ret;
     }
-    
-    private int worstFitness(Individual[] pop) {
+
+    protected int worstFitness(Individual[] pop) {
         int ret = bestFitness(pop);
         for (Individual i : pop) {
             if (i.getFitness() < ret) {
@@ -283,7 +283,7 @@ public class GeneticAlgorithm {
         return ret;
     }
 
-    private int sumFitness(Individual[] pop) {
+    protected int sumFitness(Individual[] pop) {
         int ret = 0;
         for (Individual i : pop) {
             ret += i.getFitness();
@@ -343,7 +343,7 @@ public class GeneticAlgorithm {
     public Individual[] getPopulation() {
         return population;
     }
-    
+
     public Individual getBestIndividual() {
         Individual ret = new Individual();
         for (Individual i : population) {
@@ -365,7 +365,7 @@ public class GeneticAlgorithm {
     public float getResult(int generation, int resultType) {
         return results[generation - 1][resultType];
     }
-    
+
     public void setNumberOfGenerations(int numberOfGenerations) {
         this.numberOfGenerations = numberOfGenerations;
         this.results = new float[this.numberOfGenerations][N_RESULT_SETS];

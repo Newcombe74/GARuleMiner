@@ -226,7 +226,7 @@ public class FloatRuleMiner extends RuleMiner {
 
         double dblen = ((double) super.chromosomeSize / 100.00) * (double) this.blendPerc;
         int ruleSize = this.conditionSize + 1, blen = (int) dblen,
-                cpIdx = 0;
+                cpIdx = 0, point;
         int[] crossoverPoints = new int[blen];
         float cp, blend;
         boolean cpCheck = false;
@@ -236,6 +236,8 @@ public class FloatRuleMiner extends RuleMiner {
             for (int i = 0; i < populationSize - 1; i++) {
                 parent1 = population[i].getChromosome();
                 parent2 = population[(i + 1)].getChromosome();
+                crossoverGenes[child1] = parent1;
+                crossoverGenes[child2] = parent2;
 
                 //LOOP until crossover array is full
                 while (crossoverPoints[(int) blen - 1] == 0) {
@@ -253,24 +255,16 @@ public class FloatRuleMiner extends RuleMiner {
                     cpCheck = false;
                 }
 
-                for (int g = 0; g < super.chromosomeSize; g++) {
-                    for (int c : crossoverPoints) {
-                        if (c == g) {
-                            cpCheck = true;
-                        }
+                //Blend genes at crossover points
+                for (int c = 0; c < crossoverPoints.length; c++) {
+                    point = crossoverPoints[c];
+                    blend = (float) ((Float) parent1[point] + (Float) parent2[point]) / 2;
+                    if (blend < 0) {
+                        blend *= -1;
                     }
-                    if (cpCheck) {
-                        blend = (float) ((Float) parent1[g] + (Float) parent2[g]) / 2;
-                        if (blend < 0) {
-                            blend *= -1;
-                        }
-                        crossoverGenes[child1][g] = blend;
-                        crossoverGenes[child2][g] = blend;
-                        cpCheck = false;
-                    } else {
-                        crossoverGenes[child1][g] = parent1[g];
-                        crossoverGenes[child2][g] = parent2[g];
-                    }
+                    crossoverGenes[child1][point] = blend;
+                    crossoverGenes[child2][point] = blend;
+                    cpCheck = false;
                 }
 
                 children.add(new Individual(crossoverGenes[child1]));

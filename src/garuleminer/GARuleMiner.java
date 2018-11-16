@@ -77,7 +77,8 @@ public class GARuleMiner {
             selectedTestOption;
 
     //Results
-    private static double[][] runResults = new double[5][N_RUNS];
+    private static final int RES_TRAIN = 0, RES_VALID = 1; 
+    private static double[][][] runResults = new double[2][5][N_RUNS];
     private static double[][][] genResults;
     private static PrintWriter pw;
 
@@ -162,7 +163,7 @@ public class GARuleMiner {
             }
         }
 
-        //ringBell();
+        ringBell();
     }
 
     private static void getUserValidationMethodChoice() throws FileNotFoundException {
@@ -504,7 +505,7 @@ public class GARuleMiner {
 
                 recordRunResults(ga, r);
             }
-            writeRunResults(m + 1, mutationRateVariations[m]);
+            writeRunResults(m + 1, mutationRateVariations[m], RES_TRAIN);
 
             outputPercComplete(m, mutationRateVariations.length);
         }
@@ -535,7 +536,7 @@ public class GARuleMiner {
 
                 recordRunResults(ga, r);
             }
-            writeRunResults(p + 1, popSizeVariations[p]);
+            writeRunResults(p + 1, popSizeVariations[p], RES_TRAIN);
 
             outputPercComplete(p, popSizeVariations.length);
         }
@@ -564,7 +565,7 @@ public class GARuleMiner {
 
                 recordRunResults(ga, r);
             }
-            writeRunResults(g + 1, nGensVariations[g]);
+            writeRunResults(g + 1, nGensVariations[g], RES_TRAIN);
 
             outputPercComplete(g, nGensVariations.length);
         }
@@ -592,7 +593,7 @@ public class GARuleMiner {
 
                 recordRunResults(ga, r);
             }
-            writeRunResults(n + 1, nRulesVariations[n]);
+            writeRunResults(n + 1, nRulesVariations[n], RES_TRAIN);
 
             outputPercComplete(n, nRulesVariations.length);
         }
@@ -649,7 +650,7 @@ public class GARuleMiner {
 
                 recordRunResults(ga, r);
             }
-            writeRunResults(m + 1, mutationRateVariations[m]);
+            writeRunResults(m + 1, mutationRateVariations[m], RES_VALID);
 
             outputPercComplete(m, mutationRateVariations.length);
         }
@@ -724,7 +725,7 @@ public class GARuleMiner {
 
                 recordRunResults(ga, r);
             }
-            writeRunResults(b + 1, b);
+            writeRunResults(b + 1, b, RES_VALID);
 
             outputPercComplete(b, 50);
         }
@@ -760,11 +761,19 @@ public class GARuleMiner {
     }
 
     private static void recordRunResults(RuleMiner ga, int r) {
-        runResults[RuleMiner.RESULT_BEST][r] = ga.getResult(nGens, RuleMiner.RESULT_BEST);
-        runResults[RuleMiner.RESULT_WORST][r] = ga.getResult(nGens, RuleMiner.RESULT_WORST);
-        runResults[RuleMiner.RESULT_RANGE][r] = ga.getResult(nGens, RuleMiner.RESULT_RANGE);
-        runResults[RuleMiner.RESULT_AVERAGE][r] = ga.getResult(nGens, RuleMiner.RESULT_AVERAGE);
-        runResults[RuleMiner.RESULT_SUM][r] = ga.getResult(nGens, RuleMiner.RESULT_SUM);
+        runResults[RES_TRAIN][RuleMiner.RESULT_BEST][r] = ga.getResult(nGens, RuleMiner.RESULT_BEST);
+        runResults[RES_TRAIN][RuleMiner.RESULT_WORST][r] = ga.getResult(nGens, RuleMiner.RESULT_WORST);
+        runResults[RES_TRAIN][RuleMiner.RESULT_RANGE][r] = ga.getResult(nGens, RuleMiner.RESULT_RANGE);
+        runResults[RES_TRAIN][RuleMiner.RESULT_AVERAGE][r] = ga.getResult(nGens, RuleMiner.RESULT_AVERAGE);
+        runResults[RES_TRAIN][RuleMiner.RESULT_SUM][r] = ga.getResult(nGens, RuleMiner.RESULT_SUM);
+    }
+    
+    private static void recordVRunResults(FloatRuleMiner ga, int r) {
+        runResults[RES_VALID][RuleMiner.RESULT_BEST][r] = ga.getValidationResult(nGens, RuleMiner.RESULT_BEST);
+        runResults[RES_VALID][RuleMiner.RESULT_WORST][r] = ga.getValidationResult(nGens, RuleMiner.RESULT_WORST);
+        runResults[RES_VALID][RuleMiner.RESULT_RANGE][r] = ga.getValidationResult(nGens, RuleMiner.RESULT_RANGE);
+        runResults[RES_VALID][RuleMiner.RESULT_AVERAGE][r] = ga.getValidationResult(nGens, RuleMiner.RESULT_AVERAGE);
+        runResults[RES_VALID][RuleMiner.RESULT_SUM][r] = ga.getValidationResult(nGens, RuleMiner.RESULT_SUM);
     }
 
     private static void recordVGenResults(FloatRuleMiner ga, int g, int r) {
@@ -994,21 +1003,21 @@ public class GARuleMiner {
         return sb.toString();
     }
 
-    private static void writeRunResults(int id, double rate) {
+    private static void writeRunResults(int id, double rate, int resSet) {
 
         // get averages of the results
-        double best = calcAvg(runResults[RuleMiner.RESULT_BEST]),
-                worst = calcAvg(runResults[RuleMiner.RESULT_WORST]),
-                range = calcAvg(runResults[RuleMiner.RESULT_RANGE]),
-                avg = calcAvg(runResults[RuleMiner.RESULT_AVERAGE]),
-                sum = calcAvg(runResults[RuleMiner.RESULT_SUM]);
+        double best = calcAvg(runResults[resSet][RuleMiner.RESULT_BEST]),
+                worst = calcAvg(runResults[resSet][RuleMiner.RESULT_WORST]),
+                range = calcAvg(runResults[resSet][RuleMiner.RESULT_RANGE]),
+                avg = calcAvg(runResults[resSet][RuleMiner.RESULT_AVERAGE]),
+                sum = calcAvg(runResults[resSet][RuleMiner.RESULT_SUM]);
 
         // calc confidence of the averages 
-        double bestConf = calcConfidenceBoundaries(runResults[RuleMiner.RESULT_BEST]),
-                worstConf = calcConfidenceBoundaries(runResults[RuleMiner.RESULT_WORST]),
-                rangeConf = calcConfidenceBoundaries(runResults[RuleMiner.RESULT_RANGE]),
-                avgConf = calcConfidenceBoundaries(runResults[RuleMiner.RESULT_AVERAGE]),
-                sumConf = calcConfidenceBoundaries(runResults[RuleMiner.RESULT_SUM]);
+        double bestConf = calcConfidenceBoundaries(runResults[RES_TRAIN][RuleMiner.RESULT_BEST]),
+                worstConf = calcConfidenceBoundaries(runResults[RES_TRAIN][RuleMiner.RESULT_WORST]),
+                rangeConf = calcConfidenceBoundaries(runResults[RES_TRAIN][RuleMiner.RESULT_RANGE]),
+                avgConf = calcConfidenceBoundaries(runResults[RES_TRAIN][RuleMiner.RESULT_AVERAGE]),
+                sumConf = calcConfidenceBoundaries(runResults[RES_TRAIN][RuleMiner.RESULT_SUM]);
 
         StringBuilder sb = new StringBuilder();
         sb.append(id);

@@ -32,11 +32,11 @@ public class GARuleMiner {
     //Hyperparameters
     private static final int POP_SIZE_MIN = 100,
             POP_SIZE_MAX = 1000,
-            POP_SIZE_RES_STEP = 10,
+            POP_SIZE_RES_STEP = 20,
             N_GENS_MIN = 1,
             N_GENS_MAX = 200,
             N_GENS_RES_STEP = 1,
-            N_RUNS = 10,
+            N_RUNS = 20,
             N_RULES_MIN = 1,
             N_RULES_MAX = 100,
             N_RULES_RES_STEP = 1,
@@ -44,11 +44,11 @@ public class GARuleMiner {
     //Population
     private static int[] popSizeVariations;
     private static int popSizeIdx = 0;
-    private static int popSize = 100;
+    private static int popSize = 200;
     //Generations
     private static int[] nGensVariations;
     private static int nGensIdx = 0;
-    private static int nGens = 200;
+    private static int nGens = 100;
     //Mutation
     private static double[] mutationRateVariations;
     private static int mutationRateIdx = 0;
@@ -352,7 +352,7 @@ public class GARuleMiner {
                     break;
                 case 3:
                     System.out.println("Starting training vs validation population appoach");
-                    //runTrainVsValidPopTest();
+                    runTrainVsValidPopTest();
                     inputValid = true;
                     break;
                 default:
@@ -739,6 +739,46 @@ public class GARuleMiner {
 
         for (int n = 0; n < nRulesVariations.length; n++) {
             writeRunResults(n + 1, nRulesVariations[n], RES_VALID);
+        }
+
+        System.out.println("Test complete");
+        pw.close();
+    }
+    
+    private static void runTrainVsValidPopTest() throws FileNotFoundException {
+
+        FloatRuleMiner ga = new FloatRuleMiner(popSize, nGens, data, nRules);
+        chromSize = ga.getChromosomeSize();
+
+        initRulesCSV("TrainVsValidPopResults.csv");
+
+        runResults = new double[popSizeVariations.length][2][5][N_RUNS];
+        for (int p = 0; p < popSizeVariations.length; p++) {
+            for (int r = 0; r < N_RUNS; r++) {
+                ga.setPopulationSize(popSizeVariations[p]);
+
+                ga.runHoldout(GeneticAlgorithm.SELECTION_TOURNEMENT);
+
+                recordVRunResults(ga, p, r);
+                recordTRunResults(ga, p, r);
+            }
+
+            outputPercComplete(p, popSizeVariations.length);
+        }
+
+        for (int p = 0; p < popSizeVariations.length; p++) {
+            writeRunResults(p + 1, popSizeVariations[p], RES_TRAIN);
+        }
+
+        StringBuilder sb = new StringBuilder();
+        sb.append('\n');
+        sb.append('\n');
+        sb.append('\n');
+        sb.append(getResultHeaders());
+        pw.write(sb.toString());
+
+        for (int p = 0; p < popSizeVariations.length; p++) {
+            writeRunResults(p + 1, popSizeVariations[p], RES_VALID);
         }
 
         System.out.println("Test complete");

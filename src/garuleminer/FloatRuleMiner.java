@@ -230,6 +230,7 @@ public class FloatRuleMiner extends RuleMiner {
         int[] crossoverPoints = new int[blen];
         float cp, blend;
         boolean cpCheck = false;
+        double n, o;
 
         //Blend Parents into two children
         if (blen > 0) {
@@ -249,8 +250,13 @@ public class FloatRuleMiner extends RuleMiner {
                         }
                     }
 
-                    if ((((cp + 1) / ruleSize) % 2) != 0 && !cpCheck) {
-                        crossoverPoints[cpIdx++] = (int) cp;
+                    if (!cpCheck) {
+                        //Check crossover point is not an output gene
+                        n = (i + 1) / (double) ruleSize;
+                        o = (n - Math.floor(n));
+                        if (o == 0) {
+                            crossoverPoints[cpIdx++] = (int) cp;
+                        }
                     }
                     cpCheck = false;
                 }
@@ -258,7 +264,8 @@ public class FloatRuleMiner extends RuleMiner {
                 //Blend genes at crossover points
                 for (int c = 0; c < crossoverPoints.length; c++) {
                     point = crossoverPoints[c];
-                    blend = (float) ((Float) parent1[point] + (Float) parent2[point]) / 2;
+                    blend = round((((Float) parent1[point]
+                            + (Float) parent2[point]) / 2), 6);
                     if (blend < 0) {
                         blend *= -1;
                     }
@@ -305,21 +312,31 @@ public class FloatRuleMiner extends RuleMiner {
         ArrayList<Individual> children = new ArrayList<>();
         Object[][] crossoverGenes = new Object[2][chromosomeSize];
         int child1 = 0, child2 = 1, ruleSize = this.conditionSize + 1;
-        int crossoverPoint = (int) (Math.random() * chromosomeSize) - 1;
+        int crossoverPoint = (int) (Math.random() * chromosomeSize) + 1;
+        double n, o;
+        boolean isOutput;
 
         for (int i = 0; i < chromosomeSize; i++) {
+            n = (i + 1) / (double) ruleSize;
+            o = (n - Math.floor(n));
+            isOutput = (o == 0);
 
             if (i < crossoverPoint) {
-                if (((i + 1) / ruleSize) % 2 != 0) {
-                    crossoverGenes[child1][i] = (float) 
-                            ((float) parent1[i] + (float) parent2[i]) / 2;
-                }
                 crossoverGenes[child2][i] = parent2[i];
+
+                if (!isOutput) {
+                    crossoverGenes[child1][i] = round(
+                            ((float) parent1[i] + (float) parent2[i]) / 2, 6);
+                } else {
+                    crossoverGenes[child1][i] = (float) parent2[i];
+                }
             } else {
-                crossoverGenes[child1][i] = parent2[i];
-                if (((i + 1) / ruleSize) % 2 != 0) {
-                    crossoverGenes[child2][i] = (float) 
-                            ((float) parent1[i] + (float) parent2[i]) / 2;
+                crossoverGenes[child1][i] = parent1[i];
+
+                if (!isOutput) {
+                    crossoverGenes[child2][i] = round((((float) parent1[i] + (float) parent2[i]) / 2), 6);
+                } else {
+                    crossoverGenes[child2][i] = (float) parent1[i];
                 }
             }
         }

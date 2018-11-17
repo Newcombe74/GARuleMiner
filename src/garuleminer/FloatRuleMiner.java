@@ -241,7 +241,7 @@ public class FloatRuleMiner extends RuleMiner {
 
                 //LOOP until crossover array is full
                 while (crossoverPoints[(int) blen - 1] == 0) {
-                    cp = new Random().nextInt(super.chromosomeSize) + 1;
+                    cp = new Random().nextInt(super.chromosomeSize);
 
                     for (int c : crossoverPoints) {
                         if (c == cp) {
@@ -288,7 +288,7 @@ public class FloatRuleMiner extends RuleMiner {
         ArrayList<Individual> children = new ArrayList<>();
 
         for (int i = 0; i < populationSize - 1; i++) {
-            children.addAll(singlePointCrossover(
+            children.addAll(singlePointBlendCrossover(
                     population[i].getChromosome(),
                     population[(i + 1)].getChromosome()));
         }
@@ -299,6 +299,35 @@ public class FloatRuleMiner extends RuleMiner {
             ret[i] = children.get(i);
         }
         return ret;
+    }
+
+    protected ArrayList<Individual> singlePointBlendCrossover(Object[] parent1, Object[] parent2) {
+        ArrayList<Individual> children = new ArrayList<>();
+        Object[][] crossoverGenes = new Object[2][chromosomeSize];
+        int child1 = 0, child2 = 1, ruleSize = this.conditionSize + 1;
+        int crossoverPoint = (int) (Math.random() * chromosomeSize) - 1;
+
+        for (int i = 0; i < chromosomeSize; i++) {
+
+            if (i < crossoverPoint) {
+                if (((i + 1) / ruleSize) % 2 != 0) {
+                    crossoverGenes[child1][i] = (float) 
+                            ((float) parent1[i] + (float) parent2[i]) / 2;
+                }
+                crossoverGenes[child2][i] = parent2[i];
+            } else {
+                crossoverGenes[child1][i] = parent2[i];
+                if (((i + 1) / ruleSize) % 2 != 0) {
+                    crossoverGenes[child2][i] = (float) 
+                            ((float) parent1[i] + (float) parent2[i]) / 2;
+                }
+            }
+        }
+
+        children.add(new Individual(crossoverGenes[child1]));
+        children.add(new Individual(crossoverGenes[child2]));
+
+        return children;
     }
     //END_CROSSOVER
 
@@ -340,6 +369,7 @@ public class FloatRuleMiner extends RuleMiner {
             if (super.probabilityOfMutation >= m) {
                 float mutChange;
                 float upOrDown;
+                float newVal;
 
                 if (geneType == GENE_COND || geneType == GENE_TOL) {
                     mutChange = new Random().nextFloat() * this.mutCreepTol;
@@ -347,10 +377,20 @@ public class FloatRuleMiner extends RuleMiner {
 
                     if (upOrDown >= 0.5) {
                         //Add mutChange
-                        mutatedGenes[i] = round((float) mutatedGenes[i] + mutChange, 6);
+                        newVal = round((float) mutatedGenes[i] + mutChange, 6);
+                        if (newVal > 1) {
+                            mutatedGenes[i] = (float) 1.0;
+                        } else {
+                            mutatedGenes[i] = newVal;
+                        }
                     } else {
                         //Minus mutChange
-                        mutatedGenes[i] = round((float) mutatedGenes[i] - mutChange, 6);
+                        newVal = round((float) mutatedGenes[i] - mutChange, 6);
+                        if (newVal < 0) {
+                            mutatedGenes[i] = (float) 0.0;
+                        } else {
+                            mutatedGenes[i] = newVal;
+                        }
                     }
                 } else {
                     mutatedGenes[i] = flipBinaryFloat(mutatedGenes[i]);

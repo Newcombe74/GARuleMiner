@@ -21,7 +21,7 @@ public class FloatRuleMiner extends RuleMiner {
     private int holdTrainDist = 80, kFolds = 5, kFoldTrainDist = 67;
     //Crossover
     public static final int CROSS_REG = 1, CROSS_BLEND_RAND = 2, CROSS_BLEND_CANON = 4;
-    private int blendPerc = 10;
+    private int blendPerc = 30;
     //Mutation
     public static final int MUT_CREEP = 1, MUT_NORM_DIST = 2;
     private float mutCreepTol = (float) 0.1;
@@ -242,7 +242,7 @@ public class FloatRuleMiner extends RuleMiner {
 
                 //LOOP until crossover array is full
                 while (crossoverPoints[(int) blen - 1] == 0) {
-                    cp = new Random().nextInt(super.chromosomeSize);
+                    cp = (int) (Math.random() * chromosomeSize);
 
                     for (int c : crossoverPoints) {
                         if (c == cp) {
@@ -252,12 +252,13 @@ public class FloatRuleMiner extends RuleMiner {
 
                     if (!cpCheck) {
                         //Check crossover point is not an output gene
-                        n = (i + 1) / (double) ruleSize;
+                        n = (cp + 1) / (double) ruleSize;
                         o = (n - Math.floor(n));
-                        if (o == 0) {
+                        if (o != 0) {
                             crossoverPoints[cpIdx++] = (int) cp;
                         }
                     }
+                    
                     cpCheck = false;
                 }
 
@@ -312,7 +313,7 @@ public class FloatRuleMiner extends RuleMiner {
         ArrayList<Individual> children = new ArrayList<>();
         Object[][] crossoverGenes = new Object[2][chromosomeSize];
         int child1 = 0, child2 = 1, ruleSize = this.conditionSize + 1;
-        int crossoverPoint = (int) (Math.random() * chromosomeSize) + 1;
+        int crossoverPoint = (int) (Math.random() * chromosomeSize);
         double n, o;
         boolean isOutput;
 

@@ -48,7 +48,7 @@ public class GARuleMiner {
     //Generations
     private static int[] nGensVariations;
     private static int nGensIdx = 0;
-    private static int nGens = 100;
+    private static int nGens = 200;
     //Mutation
     private static double[] mutationRateVariations;
     private static int mutationRateIdx = 0;
@@ -946,11 +946,12 @@ public class GARuleMiner {
         chromSize = ga.getChromosomeSize();
         initBlendCSV("CrossoverBlendRandVarianceResults.csv");
 
+        runResults = new double[51][2][5][N_RUNS];
         for (int b = 0; b <= 50; b++) {
             for (int r = 0; r < N_RUNS; r++) {
                 ga.setBlendPerc(b);
 
-                ga.runHoldout(GeneticAlgorithm.SELECTION_ROULETTE);
+                ga.runHoldout(GeneticAlgorithm.SELECTION_TOURNEMENT);
 
                 recordVRunResults(ga, b, r);
             }

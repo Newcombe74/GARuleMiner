@@ -23,8 +23,9 @@ public class FloatRuleMiner extends RuleMiner {
     public static final int CROSS_REG = 1, CROSS_BLEND_RAND = 2, CROSS_BLEND_CANON = 4;
     private int blendPerc = 30;
     //Mutation
-    public static final int MUT_CREEP = 1, MUT_NORM_DIST = 2;
-    private float mutCreepTol = (float) 0.1;
+    public static final int MUT_CREEP = 1, MUT_GAUSS_STATIC = 2, MUT_GAUSS_VAR = 3;
+    public static final float MAX_G_VAR = (float) 0.005;
+    private float mutationTolerance = (float) 0.1, gaussVariance = (float) 0.005;
     //Gene Types
     private final int GENE_COND = 1, GENE_OUT = 2, GENE_TOL = 3;
 
@@ -73,6 +74,8 @@ public class FloatRuleMiner extends RuleMiner {
         //SET each individuals genes to be 1 or 0 at random
         initChromosomes();
 
+        double genPerc;
+
         for (int g = 0; g < this.numberOfGenerations; g++) {
             this.population = calcFitness(this.population, this.tDataRuleSet);
             this.validationPop = calcFitness(this.population, this.vHoldDataRuleSet);
@@ -82,6 +85,11 @@ public class FloatRuleMiner extends RuleMiner {
 
             this.offspring = crossover();
 
+            if (this.mutationMethod == MUT_GAUSS_VAR) {
+                genPerc = calcPerc(g, this.numberOfGenerations);
+                genPerc = 100 - genPerc;
+                gaussVariance = MAX_G_VAR / 100 * (float) genPerc;
+            }
             this.offspring = mutate();
 
             this.offspring = calcFitness(this.offspring, this.tDataRuleSet);
@@ -258,7 +266,7 @@ public class FloatRuleMiner extends RuleMiner {
                             crossoverPoints[cpIdx++] = (int) cp;
                         }
                     }
-                    
+
                     cpCheck = false;
                 }
 
@@ -356,9 +364,12 @@ public class FloatRuleMiner extends RuleMiner {
             case MUT_CREEP:
                 //Creep
                 return mutateCreep(chrom);
-            case MUT_NORM_DIST:
-                //TODO Normal Distribution
-                return null;
+            case MUT_GAUSS_STATIC:
+                //Gaussion distribution
+                return mutateGaussian(chrom);
+            case MUT_GAUSS_VAR:
+                //Gaussion distribution
+                return mutateGaussian(chrom);
             default:
                 System.err.println("Mutation method: "
                         + this.mutationMethod + " not found");
@@ -390,7 +401,64 @@ public class FloatRuleMiner extends RuleMiner {
                 float newVal;
 
                 if (geneType == GENE_COND || geneType == GENE_TOL) {
-                    mutChange = new Random().nextFloat() * this.mutCreepTol;
+                    mutChange = new Random().nextFloat() * this.mutationTolerance;
+                    upOrDown = new Random().nextFloat();
+
+                    if (upOrDown >= 0.5) {
+                        //Add mutChange
+                        newVal = round((float) mutatedGenes[i] + mutChange, 6);
+                        if (newVal > 1) {
+                            mutatedGenes[i] = (float) 1.0;
+                        } else {
+                            mutatedGenes[i] = newVal;
+                        }
+                    } else {
+                        //Minus mutChange
+                        newVal = round((float) mutatedGenes[i] - mutChange, 6);
+                        if (newVal < 0) {
+                            mutatedGenes[i] = (float) 0.0;
+                        } else {
+                            mutatedGenes[i] = newVal;
+                        }
+                    }
+                } else {
+                    mutatedGenes[i] = flipBinaryFloat(mutatedGenes[i]);
+                }
+            }
+        }
+
+        return mutatedGenes;
+    }
+
+    private Object[] mutateGaussian(Object[] chrom) {
+        Object[] mutatedGenes = chrom;
+        int condBound = 0;
+        int geneType;
+
+        for (int i = 0; i < chrom.length; i++) {
+            double m = Math.random();
+            if (this.conditionSize == condBound) {
+                geneType = GENE_OUT;
+                condBound = 0;
+            } else if ((i % 2) != 0) {
+                geneType = GENE_TOL;
+                condBound++;
+            } else {
+                geneType = GENE_COND;
+                condBound++;
+            }
+
+            if (super.probabilityOfMutation >= m) {
+                double gaussVal;
+                float mutChange;
+                float upOrDown;
+                float newVal;
+
+                if (geneType == GENE_COND || geneType == GENE_TOL) {
+                    gaussVal = (float) calcGauss(new Random().nextFloat()
+                            * this.mutationTolerance,
+                            this.gaussVariance);
+                    mutChange = (float) gaussVal * this.mutationTolerance;
                     upOrDown = new Random().nextFloat();
 
                     if (upOrDown >= 0.5) {
@@ -542,6 +610,14 @@ public class FloatRuleMiner extends RuleMiner {
     }
 
     //START UTILS
+    private static float calcGauss(float x, float o) {
+        return (float) Math.exp(-0.5 * (Math.pow(x, 2) / o));
+    }
+
+    private double calcPerc(double a, double b) {
+        return (100 / b) * a;
+    }
+
     public static float round(float d, int decimalPlace) {
         BigDecimal bd = new BigDecimal(Float.toString(d));
         bd = bd.setScale(decimalPlace, BigDecimal.ROUND_HALF_UP);
@@ -574,11 +650,11 @@ public class FloatRuleMiner extends RuleMiner {
     }
 
     public float getMutTolerence() {
-        return mutCreepTol;
+        return mutationTolerance;
     }
 
     public void setMutTolerence(float mutCreepTol) {
-        this.mutCreepTol = mutCreepTol;
+        this.mutationTolerance = mutCreepTol;
     }
 
     public int getValidationMethod() {
@@ -622,11 +698,11 @@ public class FloatRuleMiner extends RuleMiner {
     }
 
     public float getMutCreepTol() {
-        return mutCreepTol;
+        return mutationTolerance;
     }
 
     public void setMutCreepTol(float mutCreepTol) {
-        this.mutCreepTol = mutCreepTol;
+        this.mutationTolerance = mutCreepTol;
     }
 
     public Rule[] getvHoldDataRuleSet() {
@@ -679,6 +755,22 @@ public class FloatRuleMiner extends RuleMiner {
 
     public void setValidationPop(Individual[] validationPop) {
         this.validationPop = validationPop;
+    }
+
+    public float getMutationTolerance() {
+        return mutationTolerance;
+    }
+
+    public void setMutationTolerance(float mutationTolerance) {
+        this.mutationTolerance = mutationTolerance;
+    }
+
+    public float getGaussVariance() {
+        return gaussVariance;
+    }
+
+    public void setGaussVariance(float gaussVariance) {
+        this.gaussVariance = gaussVariance;
     }
 
 }

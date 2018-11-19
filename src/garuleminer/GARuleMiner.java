@@ -48,7 +48,7 @@ public class GARuleMiner {
     //Generations
     private static int[] nGensVariations;
     private static int nGensIdx = 0;
-    private static int nGens = 200;
+    private static int nGens = 400;
     //Mutation
     private static double[] mutationRateVariations;
     private static int mutationRateIdx = 0;
@@ -270,13 +270,14 @@ public class GARuleMiner {
         while (!inputValid) {
             System.out.println("Please enter the number of the test you wish to run:");
             System.out.println(1 + ". Mutation Creep");
-            System.out.println(2 + ". Mutation Normal Distribution");
-            System.out.println(3 + ". Crossover Regular");
-            System.out.println(4 + ". Crossover Blend Random");
-            System.out.println(5 + ". Crossover Blend Random Variance");
-            System.out.println(6 + ". Crossover Canon Blend");
-            System.out.println(7 + ". Tournement Selection");
-            System.out.println(8 + ". Roulette Wheel Selection");
+            System.out.println(2 + ". Mutation Static Gaussian Curve");
+            System.out.println(3 + ". Mutation Varying Gaussian Curve");
+            System.out.println(4 + ". Crossover Regular");
+            System.out.println(5 + ". Crossover Blend Random");
+            System.out.println(6 + ". Crossover Blend Random Variance");
+            System.out.println(7 + ". Crossover Canon Blend");
+            System.out.println(8 + ". Tournement Selection");
+            System.out.println(9 + ". Roulette Wheel Selection");
 
             selectedTestOption = scanner.nextInt();
 
@@ -287,36 +288,41 @@ public class GARuleMiner {
                     inputValid = true;
                     break;
                 case 2:
-                    System.out.println("Starting mutation normal distribution test");
-                    runMutationNormalDistTest();
+                    System.out.println("Starting mutation static gaussian curve test");
+                    runMutationGaussStaticTest();
                     inputValid = true;
                     break;
                 case 3:
+                    System.out.println("Starting mutation varying gaussian curve test");
+                    runMutationGaussVarTest();
+                    inputValid = true;
+                    break;
+                case 4:
                     System.out.println("Starting crossover regular test");
                     runCrossoverRegTest();
                     inputValid = true;
                     break;
-                case 4:
+                case 5:
                     System.out.println("Starting crossover blend random test");
                     runCrossoverBlendRandTest();
                     inputValid = true;
                     break;
-                case 5:
+                case 6:
                     System.out.println("Starting crossover blend random variance test");
                     runCrossoverBlendRandVarianceTest();
                     inputValid = true;
                     break;
-                case 6:
+                case 7:
                     System.out.println("Starting crossover blend canon test");
                     runCrossoverBlendCanonTest();
                     inputValid = true;
                     break;
-                case 7:
+                case 8:
                     System.out.println("Starting tournement selection test");
                     runTournementTest();
                     inputValid = true;
                     break;
-                case 8:
+                case 9:
                     System.out.println("Starting roulette selection test");
                     runRouletteTest();
                     inputValid = true;
@@ -744,7 +750,7 @@ public class GARuleMiner {
         System.out.println("Test complete");
         pw.close();
     }
-    
+
     private static void runTrainVsValidPopTest() throws FileNotFoundException {
 
         FloatRuleMiner ga = new FloatRuleMiner(popSize, nGens, data, nRules);
@@ -838,7 +844,7 @@ public class GARuleMiner {
 
     private static void runMutationCreepTest() throws FileNotFoundException {
         FloatRuleMiner ga = new FloatRuleMiner(popSize, nGens, data, nRules);
-
+        ga.setMutationMethod(FloatRuleMiner.MUT_CREEP);
         chromSize = ga.getChromosomeSize();
         initMethodResultsCSV("MutationCreepResults.csv");
 
@@ -862,15 +868,43 @@ public class GARuleMiner {
         pw.close();
     }
 
-    private static void runMutationNormalDistTest() throws FileNotFoundException {
+    private static void runMutationGaussStaticTest() throws FileNotFoundException {
         FloatRuleMiner ga = new FloatRuleMiner(popSize, nGens, data, nRules);
-
+        ga.setMutationMethod(FloatRuleMiner.MUT_GAUSS_STATIC);
         chromSize = ga.getChromosomeSize();
-        initMethodResultsCSV("MutationCreepResults.csv");
+        initMethodResultsCSV("MutationGaussStaticVarResults.csv");
 
         genResults = new double[2][nGens][RuleMiner.N_RESULT_SETS][N_RUNS];
 
         for (int r = 0; r < N_RUNS; r++) {
+            ga.runHoldout(GeneticAlgorithm.SELECTION_TOURNEMENT);
+
+            for (int g = 0; g < nGens; g++) {
+                recordVGenResults(ga, g, r);
+            }
+
+            outputPercComplete(r, N_RUNS);
+        }
+
+        for (int g = 0; g < nGens; g++) {
+            writeGenResults(g + 1, g + 1, RES_VALID);
+        }
+
+        System.out.println("Test complete");
+        pw.close();
+    }
+
+    private static void runMutationGaussVarTest() throws FileNotFoundException {
+        FloatRuleMiner ga = new FloatRuleMiner(popSize, nGens, data, nRules);
+        ga.setMutationMethod(FloatRuleMiner.MUT_GAUSS_VAR);
+        chromSize = ga.getChromosomeSize();
+        initMethodResultsCSV("MutationGaussVarResults.csv");
+
+        genResults = new double[2][nGens][RuleMiner.N_RESULT_SETS][N_RUNS];
+
+        for (int r = 0; r < N_RUNS; r++) {
+            ga.setGaussVariance(FloatRuleMiner.MAX_G_VAR);
+            
             ga.runHoldout(GeneticAlgorithm.SELECTION_TOURNEMENT);
 
             for (int g = 0; g < nGens; g++) {

@@ -48,11 +48,7 @@ public class GARuleMiner {
     //Generations
     private static int[] nGensVariations;
     private static int nGensIdx = 0;
-<<<<<<< HEAD
     private static int nGens = 250;
-=======
-    private static int nGens = 400;
->>>>>>> a8086c9f7842ac450a3bbd7d92bd914261ee3d49
     //Mutation
     private static double[] mutationRateVariations;
     private static int mutationRateIdx = 0;

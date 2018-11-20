@@ -36,7 +36,7 @@ public class GARuleMiner {
             N_GENS_MIN = 1,
             N_GENS_MAX = 200,
             N_GENS_RES_STEP = 1,
-            N_RUNS = 20,
+            N_RUNS = 5,
             N_RULES_MIN = 1,
             N_RULES_MAX = 100,
             N_RULES_RES_STEP = 1,
@@ -44,16 +44,16 @@ public class GARuleMiner {
     //Population
     private static int[] popSizeVariations;
     private static int popSizeIdx = 0;
-    private static int popSize = 200;
+    private static int popSize = 800;
     //Generations
     private static int[] nGensVariations;
     private static int nGensIdx = 0;
-    private static int nGens = 100;
+    private static int nGens = 250;
     //Mutation
     private static double[] mutationRateVariations;
     private static int mutationRateIdx = 0;
     private static double mutationRate = (double) 1 / popSize;
-    private static double mRateMod = 2;
+    private static double mRateMod = 1.5;
     //Rules
     private static int[] nRulesVariations;
     private static int nRulesIdx = 0;
@@ -162,7 +162,7 @@ public class GARuleMiner {
             }
         }
 
-        //ringBell();
+        ringBell();
     }
 
     private static void getUserValidationMethodChoice() throws FileNotFoundException {
@@ -1185,6 +1185,7 @@ public class GARuleMiner {
         int[] ruleFitnesses = rm.calcRuleFitness(rules, validationSet);
         int condPairs = rm.getConditionSize() / 2;
         int ruleFitness, nFitRules = 0;
+        float num, tol, upper, lower;
 
         StringBuilder sb = new StringBuilder();
         sb.append('\n');
@@ -1199,6 +1200,12 @@ public class GARuleMiner {
             sb.append("Tol");
             sb.append(String.valueOf(g + 1));
             sb.append(',');
+            sb.append("Lower");
+            sb.append(String.valueOf(g + 1));
+            sb.append(',');
+            sb.append("Upper");
+            sb.append(String.valueOf(g + 1));
+            sb.append(',');
         }
         sb.append("Output");
         sb.append(',');
@@ -1210,9 +1217,30 @@ public class GARuleMiner {
 
             if (ruleFitness > 0) {
                 float[] realNumArr = rule.getRealNumArr();
-                for (float realNum : realNumArr) {
-                    sb.append(String.valueOf(realNum));
-                    sb.append(',');
+                for (int f = 0; f < realNumArr.length; f++) {
+                    if (f % 2 == 0) {
+                        sb.append(String.valueOf(realNumArr[f]));
+                        sb.append(',');
+                    } else {
+                        num = realNumArr[f - 1];
+                        tol = realNumArr[f];
+                        upper = num + tol;
+                        lower = num - tol;
+                        
+                        if(upper > 1){
+                            upper = 1;
+                        }
+                        if(lower < 0){
+                            lower = 0;
+                        }
+                        sb.append(String.valueOf(tol));
+                        sb.append(',');
+                        sb.append(String.valueOf(lower));
+                        sb.append(',');
+                        sb.append(String.valueOf(upper));
+                        sb.append(',');
+                    }
+
                 }
                 sb.append(String.valueOf(rule.getOutput()));
                 sb.append(',');

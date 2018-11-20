@@ -6,6 +6,7 @@
 package geneticalgorithm;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 
 /**
  *
@@ -119,50 +120,49 @@ public class GeneticAlgorithm {
     protected Individual[] tournementSelection() {
         Individual[] nextGen = new Individual[populationSize];
 
-        if (offspring.length > 0) {
-            for (int i = 0; i < populationSize; i++) {
-                int parent = (int) ((Math.random() * population.length) % population.length);
-                int child = (int) ((Math.random() * offspring.length) % offspring.length);
-
-                if (population[parent].getFitness() >= offspring[child].getFitness()) {
-                    nextGen[i] = new Individual(population[parent].getChromosome());
-                } else {
-                    nextGen[i] = new Individual(offspring[child].getChromosome());
-                }
-            }
-
-            return nextGen;
-        } else {
-            return population;
+        //Put parents and children into a single population
+        ArrayList<Individual> currentGen = new ArrayList<>();
+        currentGen.addAll(Arrays.asList(this.population));
+        currentGen.addAll(Arrays.asList(this.offspring));
+        
+        Individual bestIndiv;
+        for (int i = 0; i < nextGen.length; i++) {
+            bestIndiv = bestIndividual(currentGen);
+            nextGen[i] = bestIndiv;
+            currentGen.remove(bestIndiv);
         }
+
+        return nextGen;
     }
 
     protected Individual[] rouletteWheelSelection() {
         Individual[] nextGen = new Individual[populationSize];
 
         //Put parents and children into a single population
-        Individual[] currentGen = new Individual[population.length + offspring.length];
-        int n = 0;
-        for (Individual inividual : population) {
-            currentGen[n] = inividual;
-            n++;
-        }
-        for (Individual inividual : offspring) {
-            currentGen[n] = inividual;
-            n++;
-        }
-
-        int totalFitness = sumFitness(currentGen);
+        ArrayList<Individual> currentGen = new ArrayList<>();
+        currentGen.addAll(Arrays.asList(this.population));
+        currentGen.addAll(Arrays.asList(this.offspring));
+        
+        int totalFitness = sumFitness(this.population) + sumFitness(this.offspring);
+        int runningTotal = 0, j = 0, currFitness = 0, selectionPoint;
         for (int i = 0; i < populationSize; i++) {
-            int runningTotal = 0, j = 0;
-
-            int selectionPoint = (int) ((Math.random() * totalFitness) % totalFitness);
-
-            while (runningTotal <= selectionPoint) {
-                runningTotal += currentGen[j].getFitness();
+           
+            selectionPoint = (int) ((Math.random() * totalFitness) % totalFitness) + 1;
+            
+            while (runningTotal < selectionPoint) {
+                currFitness = currentGen.get(j).getFitness();
+                runningTotal += currFitness;
                 j++;
             }
-            nextGen[i] = currentGen[j - 1];
+            
+            nextGen[i] = currentGen.get(j - 1);
+            
+            //To maintain diversity
+            currentGen.remove(j - 1);
+            totalFitness -= currFitness;
+            
+            j = 0;
+            runningTotal = 0;
         }
 
         return nextGen;
@@ -196,12 +196,9 @@ public class GeneticAlgorithm {
         for (int i = 0; i < chromosomeSize; i++) {
             if (i < crossoverPoint) {
                 crossoverGenes[child1][i] = parent1[i];
-            } else {
-                crossoverGenes[child1][i] = parent2[i];
-            }
-            if (i < crossoverPoint) {
                 crossoverGenes[child2][i] = parent2[i];
             } else {
+                crossoverGenes[child1][i] = parent2[i];
                 crossoverGenes[child2][i] = parent1[i];
             }
         }
@@ -268,6 +265,16 @@ public class GeneticAlgorithm {
         for (Individual i : pop) {
             if (i.getFitness() > ret) {
                 ret = i.getFitness();
+            }
+        }
+        return ret;
+    }
+    
+    protected Individual bestIndividual(ArrayList<Individual> pop) {
+        Individual ret = new Individual();
+        for (Individual i : pop) {
+            if (i.getFitness() > ret.getFitness()) {
+                ret = i;
             }
         }
         return ret;

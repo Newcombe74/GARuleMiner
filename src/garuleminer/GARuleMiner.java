@@ -36,7 +36,7 @@ public class GARuleMiner {
             N_GENS_MIN = 1,
             N_GENS_MAX = 200,
             N_GENS_RES_STEP = 1,
-            N_RUNS = 5,
+            N_RUNS = 10,
             N_RULES_MIN = 1,
             N_RULES_MAX = 100,
             N_RULES_RES_STEP = 1,
@@ -44,11 +44,11 @@ public class GARuleMiner {
     //Population
     private static int[] popSizeVariations;
     private static int popSizeIdx = 0;
-    private static int popSize = 800;
+    private static int popSize = 200;
     //Generations
     private static int[] nGensVariations;
     private static int nGensIdx = 0;
-    private static int nGens = 250;
+    private static int nGens = 100;
     //Mutation
     private static double[] mutationRateVariations;
     private static int mutationRateIdx = 0;
@@ -103,6 +103,8 @@ public class GARuleMiner {
             System.out.println(1 + ". Data1");
             System.out.println(2 + ". Data2");
             System.out.println(3 + ". Data3");
+            System.out.println(4 + ". Data4");
+            System.out.println(5 + ". Data5");
 
             selectedDataOption = scanner.nextInt();
 
@@ -120,6 +122,16 @@ public class GARuleMiner {
                 case 3:
                     data = readDataFile(3, DATA_TYPE_FLOAT);
                     dataType = DATA_TYPE_FLOAT;
+                    inputValid = true;
+                    break;
+                case 4:
+                    data = readDataFile(4, DATA_TYPE_BINARY);
+                    dataType = DATA_TYPE_BINARY;
+                    inputValid = true;
+                    break;
+                case 5:
+                    data = readDataFile(5, DATA_TYPE_BINARY);
+                    dataType = DATA_TYPE_BINARY;
                     inputValid = true;
                     break;
                 default:
@@ -904,7 +916,7 @@ public class GARuleMiner {
 
         for (int r = 0; r < N_RUNS; r++) {
             ga.setGaussVariance(FloatRuleMiner.MAX_G_VAR);
-            
+
             ga.runHoldout(GeneticAlgorithm.SELECTION_TOURNEMENT);
 
             for (int g = 0; g < nGens; g++) {
@@ -1508,11 +1520,11 @@ public class GARuleMiner {
                         tol = realNumArr[f];
                         upper = num + tol;
                         lower = num - tol;
-                        
-                        if(upper > 1){
+
+                        if (upper > 1) {
                             upper = 1;
                         }
-                        if(lower < 0){
+                        if (lower < 0) {
                             lower = 0;
                         }
                         sb.append(String.valueOf(tol));

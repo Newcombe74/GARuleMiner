@@ -111,12 +111,31 @@ public class RuleTester {
         float[] cond;
         int n0s = 0, n1s = 0, nCorrect0s = 0, nCorrect1s = 0, nLessThanAvg;
         float total, avg;
-        boolean assertion = false, output;
+        boolean assertion, output;
+        String UpOrDown;
 
         for (Rule rule : data) {
             cond = rule.getRealNumArr();
             output = rule.getOutput() == 1;
 
+            UpOrDown = "";
+            for (int c = 0; c < cond.length; c++) {
+                if (cond[c] > 0.5) {
+                    UpOrDown += '1';
+                } else {
+                    UpOrDown += '0';
+                }
+            }
+            UpOrDown += ' ';
+            if (output) {
+                    UpOrDown += '1';
+                } else {
+                    UpOrDown += '0';
+                }
+            System.out.println(UpOrDown);
+
+
+            /*
             assertion = (cond[4] > 0.5 && cond[2] > 0.5 && cond[1] < 0.5) 
                     || (cond[3] > 0.5 && cond[6] > 0.5);
 
@@ -133,7 +152,7 @@ public class RuleTester {
                     nCorrect0s++;
                 }
             }
-
+             */
         }
 
         System.out.println(nCorrect0s + " / " + n0s);

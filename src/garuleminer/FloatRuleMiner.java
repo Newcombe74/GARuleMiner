@@ -25,7 +25,7 @@ public class FloatRuleMiner extends RuleMiner {
     //Mutation
     public static final int MUT_CREEP = 1, MUT_GAUSS_STATIC = 2, MUT_GAUSS_VAR = 3;
     public static final float MAX_G_VAR = (float) 0.005;
-    private float mutationTolerance = (float) 0.1, gaussVariance = (float) 0.0005;
+    private float mutationTolerance = (float) 0.1, gaussVariance = (float) 0.005;
     //Gene Types
     private final int GENE_COND = 1, GENE_OUT = 2, GENE_TOL = 3;
 

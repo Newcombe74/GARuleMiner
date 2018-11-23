@@ -135,9 +135,11 @@ public class RuleTester {
             System.out.println(UpOrDown);
 
 
-            /*
-            assertion = (cond[4] > 0.5 && cond[2] > 0.5 && cond[1] < 0.5) 
-                    || (cond[3] > 0.5 && cond[6] > 0.5);
+            
+            assertion = !((cond[1] > 0.5 && cond[2] < 0.5 && cond[5] < 0.5) 
+                    || (cond[1] < 0.5 && cond[2] > 0.5 && cond[4] < 0.5) 
+                    || (cond[1] < 0.5 && cond[2] < 0.5 && cond[3] < 0.5) 
+                    || (cond[1] > 0.5 && cond[2] > 0.5 && cond[6] < 0.5));
 
             if (output) {
                 n1s++;
@@ -152,7 +154,7 @@ public class RuleTester {
                     nCorrect0s++;
                 }
             }
-             */
+             
         }
 
         System.out.println(nCorrect0s + " / " + n0s);

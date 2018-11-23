@@ -23,9 +23,12 @@ public class FloatRuleMiner extends RuleMiner {
     public static final int CROSS_REG = 1, CROSS_BLEND_RAND = 2, CROSS_BLEND_CANON = 4;
     private int blendPerc = 30;
     //Mutation
-    public static final int MUT_CREEP = 1, MUT_GAUSS_STATIC = 2, MUT_GAUSS_VAR = 3;
-    public static final float MAX_G_VAR = (float) 0.005;
-    private float mutationTolerance = (float) 0.1, gaussVariance = (float) 0.005;
+    public static final int MUT_CREEP = 1, MUT_CREEP_VAR = 2,
+            MUT_GAUSS_STATIC = 3, MUT_GAUSS_VAR = 4;
+    public static final float MAX_C_VAR = (float) 0.5, MAX_G_VAR = (float) 0.005;
+    private float mutationTolerance = (float) 0.1,
+            creepVariance = (float) 0.5,
+            gaussVariance = (float) 0.005;
     //Gene Types
     private final int GENE_COND = 1, GENE_OUT = 2, GENE_TOL = 3;
 
@@ -85,10 +88,12 @@ public class FloatRuleMiner extends RuleMiner {
 
             this.offspring = crossover();
 
-            if (this.mutationMethod == MUT_GAUSS_VAR) {
+            if (this.mutationMethod == MUT_GAUSS_VAR
+                    || this.mutationMethod == MUT_CREEP_VAR) {
                 genPerc = calcPerc(g, this.numberOfGenerations);
                 genPerc = 100 - genPerc;
                 gaussVariance = MAX_G_VAR / 100 * (float) genPerc;
+                creepVariance = MAX_C_VAR / 100 * (float) genPerc;
             }
             this.offspring = mutate();
 
@@ -364,6 +369,9 @@ public class FloatRuleMiner extends RuleMiner {
             case MUT_CREEP:
                 //Creep
                 return mutateCreep(chrom);
+            case MUT_CREEP_VAR:
+                //Creep
+                return mutateCreep(chrom);
             case MUT_GAUSS_STATIC:
                 //Gaussion distribution
                 return mutateGaussian(chrom);
@@ -401,7 +409,7 @@ public class FloatRuleMiner extends RuleMiner {
                 float newVal;
 
                 if (geneType == GENE_COND || geneType == GENE_TOL) {
-                    mutChange = new Random().nextFloat() * this.mutationTolerance;
+                    mutChange = new Random().nextFloat() * this.creepVariance;
                     upOrDown = new Random().nextFloat();
 
                     if (upOrDown >= 0.5) {
@@ -771,6 +779,14 @@ public class FloatRuleMiner extends RuleMiner {
 
     public void setGaussVariance(float gaussVariance) {
         this.gaussVariance = gaussVariance;
+    }
+
+    public float getCreepVariance() {
+        return creepVariance;
+    }
+
+    public void setCreepVariance(float creepVariance) {
+        this.creepVariance = creepVariance;
     }
 
 }

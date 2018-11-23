@@ -36,7 +36,7 @@ public class GARuleMiner {
             N_GENS_MIN = 1,
             N_GENS_MAX = 200,
             N_GENS_RES_STEP = 1,
-            N_RUNS = 10,
+            N_RUNS = 20,
             N_RULES_MIN = 1,
             N_RULES_MAX = 100,
             N_RULES_RES_STEP = 1,
@@ -44,11 +44,11 @@ public class GARuleMiner {
     //Population
     private static int[] popSizeVariations;
     private static int popSizeIdx = 0;
-    private static int popSize = 400;
+    private static int popSize = 200;
     //Generations
     private static int[] nGensVariations;
     private static int nGensIdx = 0;
-    private static int nGens = 200;
+    private static int nGens = 400;
     //Mutation
     private static double[] mutationRateVariations;
     private static int mutationRateIdx = 0;
@@ -58,7 +58,7 @@ public class GARuleMiner {
     private static int[] nRulesVariations;
     private static int nRulesIdx = 0;
     private static int chromSize = 0;
-    private static int nRules = 6;
+    private static int nRules = 10;
 
     //Test Option Indexes
     private static final int TEST_MUT = 1,
@@ -282,14 +282,15 @@ public class GARuleMiner {
         while (!inputValid) {
             System.out.println("Please enter the number of the test you wish to run:");
             System.out.println(1 + ". Mutation Creep");
-            System.out.println(2 + ". Mutation Static Gaussian Curve");
-            System.out.println(3 + ". Mutation Varying Gaussian Curve");
-            System.out.println(4 + ". Crossover Regular");
-            System.out.println(5 + ". Crossover Blend Random");
-            System.out.println(6 + ". Crossover Blend Random Variance");
-            System.out.println(7 + ". Crossover Canon Blend");
-            System.out.println(8 + ". Tournement Selection");
-            System.out.println(9 + ". Roulette Wheel Selection");
+            System.out.println(2 + ". Mutation Varying Creep");
+            System.out.println(3 + ". Mutation Static Gaussian Curve");
+            System.out.println(4 + ". Mutation Varying Gaussian Curve");
+            System.out.println(5 + ". Crossover Regular");
+            System.out.println(6 + ". Crossover Blend Random");
+            System.out.println(7 + ". Crossover Blend Random Variance");
+            System.out.println(8 + ". Crossover Canon Blend");
+            System.out.println(9 + ". Tournement Selection");
+            System.out.println(10 + ". Roulette Wheel Selection");
 
             selectedTestOption = scanner.nextInt();
 
@@ -300,41 +301,46 @@ public class GARuleMiner {
                     inputValid = true;
                     break;
                 case 2:
+                    System.out.println("Starting mutation varying creep test");
+                    runMutationCreepVarTest();
+                    inputValid = true;
+                    break;
+                case 3:
                     System.out.println("Starting mutation static gaussian curve test");
                     runMutationGaussStaticTest();
                     inputValid = true;
                     break;
-                case 3:
+                case 4:
                     System.out.println("Starting mutation varying gaussian curve test");
                     runMutationGaussVarTest();
                     inputValid = true;
                     break;
-                case 4:
+                case 5:
                     System.out.println("Starting crossover regular test");
                     runCrossoverRegTest();
                     inputValid = true;
                     break;
-                case 5:
+                case 6:
                     System.out.println("Starting crossover blend random test");
                     runCrossoverBlendRandTest();
                     inputValid = true;
                     break;
-                case 6:
+                case 7:
                     System.out.println("Starting crossover blend random variance test");
                     runCrossoverBlendRandVarianceTest();
                     inputValid = true;
                     break;
-                case 7:
+                case 8:
                     System.out.println("Starting crossover blend canon test");
                     runCrossoverBlendCanonTest();
                     inputValid = true;
                     break;
-                case 8:
+                case 9:
                     System.out.println("Starting tournement selection test");
                     runTournementTest();
                     inputValid = true;
                     break;
-                case 9:
+                case 10:
                     System.out.println("Starting roulette selection test");
                     runRouletteTest();
                     inputValid = true;
@@ -863,6 +869,34 @@ public class GARuleMiner {
         genResults = new double[2][nGens][RuleMiner.N_RESULT_SETS][N_RUNS];
 
         for (int r = 0; r < N_RUNS; r++) {
+            ga.runHoldout(GeneticAlgorithm.SELECTION_TOURNEMENT);
+
+            for (int g = 0; g < nGens; g++) {
+                recordVGenResults(ga, g, r);
+            }
+
+            outputPercComplete(r, N_RUNS);
+        }
+
+        for (int g = 0; g < nGens; g++) {
+            writeGenResults(g + 1, g + 1, RES_VALID);
+        }
+
+        System.out.println("Test complete");
+        pw.close();
+    }
+    
+    private static void runMutationCreepVarTest() throws FileNotFoundException {
+        FloatRuleMiner ga = new FloatRuleMiner(popSize, nGens, data, nRules);
+        ga.setMutationMethod(FloatRuleMiner.MUT_CREEP_VAR);
+        chromSize = ga.getChromosomeSize();
+        initMethodResultsCSV("MutationCreepVarResults.csv");
+
+        genResults = new double[2][nGens][RuleMiner.N_RESULT_SETS][N_RUNS];
+
+        for (int r = 0; r < N_RUNS; r++) {
+            ga.setCreepVariance(FloatRuleMiner.MAX_C_VAR);
+
             ga.runHoldout(GeneticAlgorithm.SELECTION_TOURNEMENT);
 
             for (int g = 0; g < nGens; g++) {

@@ -144,8 +144,8 @@ public class GARuleMiner {
             System.out.println("Please enter the number to either:");
             System.out.println(1 + ". Mine Data For Rules");
             System.out.println(2 + ". Test Hyperparameter Variances");
+            System.out.println(3 + ". Test Method Variances");
             if (selectedDataOption == 3) {
-                System.out.println(3 + ". Test Method Variances");
                 System.out.println(4 + ". Test Training vs. Validation");
             }
 
@@ -167,11 +167,11 @@ public class GARuleMiner {
                     break;
                 case 3:
                     if (selectedDataOption == 3) {
-                        getUserTestMethodsChoice();
-                        inputValid = true;
+                        getUserTestFloatMethodsChoice();
                     } else {
-                        System.out.println("Input invalid");
+                        getUserTestBinaryMethodsChoice();
                     }
+                    inputValid = true;
                     break;
                 case 4:
                     if (selectedDataOption == 3) {
@@ -275,7 +275,7 @@ public class GARuleMiner {
         }
     }
 
-    private static void getUserTestMethodsChoice() throws FileNotFoundException {
+    private static void getUserTestFloatMethodsChoice() throws FileNotFoundException {
         Scanner scanner = new Scanner(System.in);
 
         boolean inputValid = false;
@@ -337,12 +337,40 @@ public class GARuleMiner {
                     break;
                 case 9:
                     System.out.println("Starting tournement selection test");
-                    runTournementTest();
+                    runFloatTournementTest();
                     inputValid = true;
                     break;
                 case 10:
                     System.out.println("Starting roulette selection test");
-                    runRouletteTest();
+                    runFloatRouletteTest();
+                    inputValid = true;
+                    break;
+                default:
+                    System.out.println("Input invalid");
+            }
+        }
+    }
+
+    private static void getUserTestBinaryMethodsChoice() throws FileNotFoundException {
+        Scanner scanner = new Scanner(System.in);
+
+        boolean inputValid = false;
+        while (!inputValid) {
+            System.out.println("Please enter the number of the test you wish to run:");
+            System.out.println(1 + ". Tournement Selection");
+            System.out.println(2 + ". Roulette Wheel Selection");
+
+            selectedTestOption = scanner.nextInt();
+
+            switch (selectedTestOption) {
+                case 1:
+                    System.out.println("Starting tournement selection test");
+                    runBinaryTournementTest();
+                    inputValid = true;
+                    break;
+                case 2:
+                    System.out.println("Starting roulette selection test");
+                    runBinaryRouletteTest();
                     inputValid = true;
                     break;
                 default:
@@ -809,7 +837,7 @@ public class GARuleMiner {
         pw.close();
     }
 
-    private static void runTournementTest() throws FileNotFoundException {
+    private static void runFloatTournementTest() throws FileNotFoundException {
         FloatRuleMiner ga = new FloatRuleMiner(popSize, nGens, data, nRules);
 
         chromSize = ga.getChromosomeSize();
@@ -835,7 +863,33 @@ public class GARuleMiner {
         pw.close();
     }
 
-    private static void runRouletteTest() throws FileNotFoundException {
+    private static void runBinaryTournementTest() throws FileNotFoundException {
+        RuleMiner ga = new RuleMiner(popSize, nGens, data, nRules);
+
+        chromSize = ga.getChromosomeSize();
+        initMethodResultsCSV("TournementResults.csv");
+
+        genResults = new double[2][nGens][RuleMiner.N_RESULT_SETS][N_RUNS];
+
+        for (int r = 0; r < N_RUNS; r++) {
+            ga.run(GeneticAlgorithm.SELECTION_TOURNEMENT);
+
+            for (int g = 0; g < nGens; g++) {
+                recordTGenResults(ga, g, r);
+            }
+
+            outputPercComplete(r, N_RUNS);
+        }
+
+        for (int g = 0; g < nGens; g++) {
+            writeGenResults(g + 1, g + 1, RES_TRAIN);
+        }
+
+        System.out.println("Test complete");
+        pw.close();
+    }
+    
+    private static void runFloatRouletteTest() throws FileNotFoundException {
         FloatRuleMiner ga = new FloatRuleMiner(popSize, nGens, data, nRules);
         chromSize = ga.getChromosomeSize();
         initMethodResultsCSV("RouletteResults.csv");
@@ -854,6 +908,31 @@ public class GARuleMiner {
 
         for (int g = 0; g < nGens; g++) {
             writeGenResults(g + 1, g + 1, RES_VALID);
+        }
+
+        System.out.println("Test complete");
+        pw.close();
+    }
+    
+    private static void runBinaryRouletteTest() throws FileNotFoundException {
+        RuleMiner ga = new RuleMiner(popSize, nGens, data, nRules);
+        chromSize = ga.getChromosomeSize();
+        initMethodResultsCSV("RouletteResults.csv");
+
+        genResults = new double[2][nGens][RuleMiner.N_RESULT_SETS][N_RUNS];
+
+        for (int r = 0; r < N_RUNS; r++) {
+            ga.run(GeneticAlgorithm.SELECTION_ROULETTE);
+
+            for (int g = 0; g < nGens; g++) {
+                recordTGenResults(ga, g, r);
+            }
+
+            outputPercComplete(r, N_RUNS);
+        }
+
+        for (int g = 0; g < nGens; g++) {
+            writeGenResults(g + 1, g + 1, RES_TRAIN);
         }
 
         System.out.println("Test complete");
@@ -885,9 +964,10 @@ public class GARuleMiner {
         System.out.println("Test complete");
         pw.close();
     }
-    
+
     private static void runMutationCreepVarTest() throws FileNotFoundException {
         FloatRuleMiner ga = new FloatRuleMiner(popSize, nGens, data, nRules);
+        
         ga.setMutationMethod(FloatRuleMiner.MUT_CREEP_VAR);
         chromSize = ga.getChromosomeSize();
         initMethodResultsCSV("MutationCreepVarResults.csv");
@@ -1094,7 +1174,7 @@ public class GARuleMiner {
         genResults[RES_VALID][g][RuleMiner.RESULT_SUM][r] = ga.getValidationResult(g + 1, RuleMiner.RESULT_SUM);
     }
 
-    private static void recordTGenResults(FloatRuleMiner ga, int g, int r) {
+    private static void recordTGenResults(RuleMiner ga, int g, int r) {
         genResults[RES_TRAIN][g][RuleMiner.RESULT_BEST][r] = ga.getResult(g + 1, RuleMiner.RESULT_BEST);
         genResults[RES_TRAIN][g][RuleMiner.RESULT_WORST][r] = ga.getResult(g + 1, RuleMiner.RESULT_WORST);
         genResults[RES_TRAIN][g][RuleMiner.RESULT_RANGE][r] = ga.getResult(g + 1, RuleMiner.RESULT_RANGE);

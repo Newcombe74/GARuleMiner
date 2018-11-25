@@ -32,11 +32,11 @@ public class GARuleMiner {
     //Hyperparameters
     private static final int POP_SIZE_MIN = 100,
             POP_SIZE_MAX = 1000,
-            POP_SIZE_RES_STEP = 20,
+            POP_SIZE_RES_STEP = 10,
             N_GENS_MIN = 1,
             N_GENS_MAX = 200,
             N_GENS_RES_STEP = 1,
-            N_RUNS = 20,
+            N_RUNS = 50,
             N_RULES_MIN = 1,
             N_RULES_MAX = 100,
             N_RULES_RES_STEP = 1,
@@ -44,11 +44,11 @@ public class GARuleMiner {
     //Population
     private static int[] popSizeVariations;
     private static int popSizeIdx = 0;
-    private static int popSize = 200;
+    private static int popSize = 100;
     //Generations
     private static int[] nGensVariations;
     private static int nGensIdx = 0;
-    private static int nGens = 400;
+    private static int nGens = 100;
     //Mutation
     private static double[] mutationRateVariations;
     private static int mutationRateIdx = 0;
@@ -291,6 +291,7 @@ public class GARuleMiner {
             System.out.println(8 + ". Crossover Canon Blend");
             System.out.println(9 + ". Tournement Selection");
             System.out.println(10 + ". Roulette Wheel Selection");
+            System.out.println(11 + ". Truncation Selection");
 
             selectedTestOption = scanner.nextInt();
 
@@ -337,12 +338,17 @@ public class GARuleMiner {
                     break;
                 case 9:
                     System.out.println("Starting tournement selection test");
-                    runFloatTournementTest();
+                    runFloatSelectionTest(GeneticAlgorithm.SELECTION_TOURNEMENT);
                     inputValid = true;
                     break;
                 case 10:
                     System.out.println("Starting roulette selection test");
-                    runFloatRouletteTest();
+                    runFloatSelectionTest(GeneticAlgorithm.SELECTION_ROULETTE);
+                    inputValid = true;
+                    break;
+                case 11:
+                    System.out.println("Starting truncation selection test");
+                    runFloatSelectionTest(GeneticAlgorithm.SELECTION_TRUNCATION);
                     inputValid = true;
                     break;
                 default:
@@ -359,18 +365,24 @@ public class GARuleMiner {
             System.out.println("Please enter the number of the test you wish to run:");
             System.out.println(1 + ". Tournement Selection");
             System.out.println(2 + ". Roulette Wheel Selection");
+            System.out.println(3 + ". Truncation Selection");
 
             selectedTestOption = scanner.nextInt();
 
             switch (selectedTestOption) {
                 case 1:
                     System.out.println("Starting tournement selection test");
-                    runBinaryTournementTest();
+                    runBinarySelectionTest(GeneticAlgorithm.SELECTION_TOURNEMENT);
                     inputValid = true;
                     break;
                 case 2:
                     System.out.println("Starting roulette selection test");
-                    runBinaryRouletteTest();
+                    runBinarySelectionTest(GeneticAlgorithm.SELECTION_ROULETTE);
+                    inputValid = true;
+                    break;
+                case 3:
+                    System.out.println("Starting truncation selection test");
+                    runBinarySelectionTest(GeneticAlgorithm.SELECTION_TRUNCATION);
                     inputValid = true;
                     break;
                 default:
@@ -525,7 +537,7 @@ public class GARuleMiner {
         initFittestCSV("FittestIndividualsResults.csv");
 
         for (int r = 0; r < N_RUNS; r++) {
-            ga.run(RuleMiner.SELECTION_TOURNEMENT);
+            ga.run(RuleMiner.SELECTION_TRUNCATION);
 
             //Write fittest individual of the current run
             Individual i = ga.getBestIndividual();
@@ -575,7 +587,7 @@ public class GARuleMiner {
         initFittestCSV("FittestIndividualsResults.csv");
 
         for (int r = 0; r < N_RUNS; r++) {
-            ga.runHoldout(RuleMiner.SELECTION_TOURNEMENT);
+            ga.runHoldout(RuleMiner.SELECTION_TRUNCATION);
 
             //Write fittest individual of the current run
             Individual i = ga.getBestIndividual();
@@ -606,13 +618,13 @@ public class GARuleMiner {
 
         initMutationsCSV("MutationRateVarianceResults.csv");
 
-        runResults = new double[nRulesVariations.length][2][5][N_RUNS];
+        runResults = new double[mutationRateVariations.length][2][5][N_RUNS];
 
         for (int m = 0; m < mutationRateVariations.length; m++) {
             for (int r = 0; r < N_RUNS; r++) {
                 ga.setProbabilityOfMutation(mutationRateVariations[m]);
 
-                ga.run(RuleMiner.SELECTION_TOURNEMENT);
+                ga.run(RuleMiner.SELECTION_TRUNCATION);
 
                 recordTRunResults(ga, m, r);
             }
@@ -645,7 +657,7 @@ public class GARuleMiner {
 
                 ga.setProbabilityOfMutation(1 / popSizeVariations[p]);
 
-                ga.run(GeneticAlgorithm.SELECTION_TOURNEMENT);
+                ga.run(GeneticAlgorithm.SELECTION_TRUNCATION);
 
                 recordTRunResults(ga, p, r);
             }
@@ -669,14 +681,14 @@ public class GARuleMiner {
         chromSize = ga.getChromosomeSize();
         initGenerationsCSV("NoOfGenerationsVarianceResults.csv");
 
-        runResults = new double[nRulesVariations.length][2][5][N_RUNS];
+        runResults = new double[nGensVariations.length][2][5][N_RUNS];
 
         for (int g = 0; g < nGensVariations.length; g++) {
             for (int r = 0; r < N_RUNS; r++) {
                 ga.setNumberOfGenerations(nGensVariations[g]);
                 nGens = nGensVariations[g];
 
-                ga.run(GeneticAlgorithm.SELECTION_TOURNEMENT);
+                ga.run(GeneticAlgorithm.SELECTION_TRUNCATION);
 
                 recordTRunResults(ga, g, r);
             }
@@ -706,7 +718,7 @@ public class GARuleMiner {
             for (int r = 0; r < N_RUNS; r++) {
                 ga.setNRules(nRulesVariations[n]);
 
-                ga.run(GeneticAlgorithm.SELECTION_TOURNEMENT);
+                ga.run(GeneticAlgorithm.SELECTION_TRUNCATION);
 
                 recordTRunResults(ga, n, r);
             }
@@ -728,7 +740,7 @@ public class GARuleMiner {
         genResults = new double[2][nGens][RuleMiner.N_RESULT_SETS][N_RUNS];
 
         for (int r = 0; r < N_RUNS; r++) {
-            ga.runHoldout(GeneticAlgorithm.SELECTION_TOURNEMENT);
+            ga.runHoldout(GeneticAlgorithm.SELECTION_TRUNCATION);
 
             for (int g = 0; g < nGens; g++) {
                 recordVGenResults(ga, g, r);
@@ -769,7 +781,7 @@ public class GARuleMiner {
             for (int r = 0; r < N_RUNS; r++) {
                 ga.setNRules(nRulesVariations[n]);
 
-                ga.runHoldout(GeneticAlgorithm.SELECTION_TOURNEMENT);
+                ga.runHoldout(GeneticAlgorithm.SELECTION_TRUNCATION);
 
                 recordVRunResults(ga, n, r);
                 recordTRunResults(ga, n, r);
@@ -809,7 +821,7 @@ public class GARuleMiner {
             for (int r = 0; r < N_RUNS; r++) {
                 ga.setPopulationSize(popSizeVariations[p]);
 
-                ga.runHoldout(GeneticAlgorithm.SELECTION_TOURNEMENT);
+                ga.runHoldout(GeneticAlgorithm.SELECTION_TRUNCATION);
 
                 recordVRunResults(ga, p, r);
                 recordTRunResults(ga, p, r);
@@ -837,16 +849,16 @@ public class GARuleMiner {
         pw.close();
     }
 
-    private static void runFloatTournementTest() throws FileNotFoundException {
+    private static void runFloatSelectionTest(int selectionType) throws FileNotFoundException {
         FloatRuleMiner ga = new FloatRuleMiner(popSize, nGens, data, nRules);
 
         chromSize = ga.getChromosomeSize();
-        initMethodResultsCSV("TournementResults.csv");
+        initMethodResultsCSV("SelectionResults.csv");
 
         genResults = new double[2][nGens][RuleMiner.N_RESULT_SETS][N_RUNS];
 
         for (int r = 0; r < N_RUNS; r++) {
-            ga.runHoldout(GeneticAlgorithm.SELECTION_TOURNEMENT);
+            ga.runHoldout(selectionType);
 
             for (int g = 0; g < nGens; g++) {
                 recordVGenResults(ga, g, r);
@@ -863,66 +875,16 @@ public class GARuleMiner {
         pw.close();
     }
 
-    private static void runBinaryTournementTest() throws FileNotFoundException {
+    private static void runBinarySelectionTest(int selectionType) throws FileNotFoundException {
         RuleMiner ga = new RuleMiner(popSize, nGens, data, nRules);
 
         chromSize = ga.getChromosomeSize();
-        initMethodResultsCSV("TournementResults.csv");
+        initMethodResultsCSV("SelectionResults.csv");
 
         genResults = new double[2][nGens][RuleMiner.N_RESULT_SETS][N_RUNS];
 
         for (int r = 0; r < N_RUNS; r++) {
-            ga.run(GeneticAlgorithm.SELECTION_TOURNEMENT);
-
-            for (int g = 0; g < nGens; g++) {
-                recordTGenResults(ga, g, r);
-            }
-
-            outputPercComplete(r, N_RUNS);
-        }
-
-        for (int g = 0; g < nGens; g++) {
-            writeGenResults(g + 1, g + 1, RES_TRAIN);
-        }
-
-        System.out.println("Test complete");
-        pw.close();
-    }
-    
-    private static void runFloatRouletteTest() throws FileNotFoundException {
-        FloatRuleMiner ga = new FloatRuleMiner(popSize, nGens, data, nRules);
-        chromSize = ga.getChromosomeSize();
-        initMethodResultsCSV("RouletteResults.csv");
-
-        genResults = new double[2][nGens][RuleMiner.N_RESULT_SETS][N_RUNS];
-
-        for (int r = 0; r < N_RUNS; r++) {
-            ga.runHoldout(GeneticAlgorithm.SELECTION_ROULETTE);
-
-            for (int g = 0; g < nGens; g++) {
-                recordVGenResults(ga, g, r);
-            }
-
-            outputPercComplete(r, N_RUNS);
-        }
-
-        for (int g = 0; g < nGens; g++) {
-            writeGenResults(g + 1, g + 1, RES_VALID);
-        }
-
-        System.out.println("Test complete");
-        pw.close();
-    }
-    
-    private static void runBinaryRouletteTest() throws FileNotFoundException {
-        RuleMiner ga = new RuleMiner(popSize, nGens, data, nRules);
-        chromSize = ga.getChromosomeSize();
-        initMethodResultsCSV("RouletteResults.csv");
-
-        genResults = new double[2][nGens][RuleMiner.N_RESULT_SETS][N_RUNS];
-
-        for (int r = 0; r < N_RUNS; r++) {
-            ga.run(GeneticAlgorithm.SELECTION_ROULETTE);
+            ga.run(selectionType);
 
             for (int g = 0; g < nGens; g++) {
                 recordTGenResults(ga, g, r);
@@ -948,7 +910,7 @@ public class GARuleMiner {
         genResults = new double[2][nGens][RuleMiner.N_RESULT_SETS][N_RUNS];
 
         for (int r = 0; r < N_RUNS; r++) {
-            ga.runHoldout(GeneticAlgorithm.SELECTION_TOURNEMENT);
+            ga.runHoldout(GeneticAlgorithm.SELECTION_TRUNCATION);
 
             for (int g = 0; g < nGens; g++) {
                 recordVGenResults(ga, g, r);
@@ -967,7 +929,7 @@ public class GARuleMiner {
 
     private static void runMutationCreepVarTest() throws FileNotFoundException {
         FloatRuleMiner ga = new FloatRuleMiner(popSize, nGens, data, nRules);
-        
+
         ga.setMutationMethod(FloatRuleMiner.MUT_CREEP_VAR);
         chromSize = ga.getChromosomeSize();
         initMethodResultsCSV("MutationCreepVarResults.csv");
@@ -977,7 +939,7 @@ public class GARuleMiner {
         for (int r = 0; r < N_RUNS; r++) {
             ga.setCreepVariance(FloatRuleMiner.MAX_C_VAR);
 
-            ga.runHoldout(GeneticAlgorithm.SELECTION_TOURNEMENT);
+            ga.runHoldout(GeneticAlgorithm.SELECTION_TRUNCATION);
 
             for (int g = 0; g < nGens; g++) {
                 recordVGenResults(ga, g, r);
@@ -1003,7 +965,7 @@ public class GARuleMiner {
         genResults = new double[2][nGens][RuleMiner.N_RESULT_SETS][N_RUNS];
 
         for (int r = 0; r < N_RUNS; r++) {
-            ga.runHoldout(GeneticAlgorithm.SELECTION_TOURNEMENT);
+            ga.runHoldout(GeneticAlgorithm.SELECTION_TRUNCATION);
 
             for (int g = 0; g < nGens; g++) {
                 recordVGenResults(ga, g, r);
@@ -1031,7 +993,7 @@ public class GARuleMiner {
         for (int r = 0; r < N_RUNS; r++) {
             ga.setGaussVariance(FloatRuleMiner.MAX_G_VAR);
 
-            ga.runHoldout(GeneticAlgorithm.SELECTION_TOURNEMENT);
+            ga.runHoldout(GeneticAlgorithm.SELECTION_TRUNCATION);
 
             for (int g = 0; g < nGens; g++) {
                 recordVGenResults(ga, g, r);
@@ -1057,7 +1019,7 @@ public class GARuleMiner {
         genResults = new double[2][nGens][RuleMiner.N_RESULT_SETS][N_RUNS];
 
         for (int r = 0; r < N_RUNS; r++) {
-            ga.runHoldout(GeneticAlgorithm.SELECTION_TOURNEMENT);
+            ga.runHoldout(GeneticAlgorithm.SELECTION_TRUNCATION);
 
             for (int g = 0; g < nGens; g++) {
                 recordVGenResults(ga, g, r);
@@ -1083,7 +1045,7 @@ public class GARuleMiner {
         genResults = new double[2][nGens][RuleMiner.N_RESULT_SETS][N_RUNS];
 
         for (int r = 0; r < N_RUNS; r++) {
-            ga.runHoldout(GeneticAlgorithm.SELECTION_TOURNEMENT);
+            ga.runHoldout(GeneticAlgorithm.SELECTION_TRUNCATION);
 
             for (int g = 0; g < nGens; g++) {
                 recordVGenResults(ga, g, r);
@@ -1111,7 +1073,7 @@ public class GARuleMiner {
             for (int r = 0; r < N_RUNS; r++) {
                 ga.setBlendPerc(b);
 
-                ga.runHoldout(GeneticAlgorithm.SELECTION_TOURNEMENT);
+                ga.runHoldout(GeneticAlgorithm.SELECTION_TRUNCATION);
 
                 recordVRunResults(ga, b, r);
             }
@@ -1133,7 +1095,7 @@ public class GARuleMiner {
         genResults = new double[2][nGens][RuleMiner.N_RESULT_SETS][N_RUNS];
 
         for (int r = 0; r < N_RUNS; r++) {
-            ga.runHoldout(GeneticAlgorithm.SELECTION_TOURNEMENT);
+            ga.runHoldout(GeneticAlgorithm.SELECTION_TRUNCATION);
 
             for (int g = 0; g < nGens; g++) {
                 recordVGenResults(ga, g, r);

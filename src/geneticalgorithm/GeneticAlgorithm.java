@@ -16,7 +16,8 @@ public class GeneticAlgorithm {
 
     //Selection Type
     public final static int SELECTION_TOURNEMENT = 1,
-            SELECTION_ROULETTE = 2;
+            SELECTION_ROULETTE = 2,
+            SELECTION_TRUNCATION = 3;
 
     //Hyperparameters
     protected int populationSize,
@@ -111,20 +112,22 @@ public class GeneticAlgorithm {
                 return tournementSelection();
             case SELECTION_ROULETTE:
                 return rouletteWheelSelection();
+            case SELECTION_TRUNCATION:
+                return truncationSelection();
             default:
                 System.err.println("Selection type not found: " + selectionType);
                 return null;
         }
     }
 
-    protected Individual[] tournementSelection() {
+    protected Individual[] truncationSelection() {
         Individual[] nextGen = new Individual[populationSize];
 
         //Put parents and children into a single population
         ArrayList<Individual> currentGen = new ArrayList<>();
         currentGen.addAll(Arrays.asList(this.population));
         currentGen.addAll(Arrays.asList(this.offspring));
-        
+
         Individual bestIndiv;
         for (int i = 0; i < nextGen.length; i++) {
             bestIndiv = bestIndividual(currentGen);
@@ -135,6 +138,27 @@ public class GeneticAlgorithm {
         return nextGen;
     }
 
+    protected Individual[] tournementSelection() {
+        Individual[] nextGen = new Individual[populationSize];
+
+        if (offspring.length > 0) {
+            for (int i = 0; i < populationSize; i++) {
+                int parent = (int) ((Math.random() * population.length) % population.length);
+                int child = (int) ((Math.random() * offspring.length) % offspring.length);
+
+                if (population[parent].getFitness() >= offspring[child].getFitness()) {
+                    nextGen[i] = new Individual(population[parent].getChromosome());
+                } else {
+                    nextGen[i] = new Individual(offspring[child].getChromosome());
+                }
+            }
+
+            return nextGen;
+        } else {
+            return population;
+        }
+    }
+
     protected Individual[] rouletteWheelSelection() {
         Individual[] nextGen = new Individual[populationSize];
 
@@ -142,25 +166,25 @@ public class GeneticAlgorithm {
         ArrayList<Individual> currentGen = new ArrayList<>();
         currentGen.addAll(Arrays.asList(this.population));
         currentGen.addAll(Arrays.asList(this.offspring));
-        
+
         int totalFitness = sumFitness(this.population) + sumFitness(this.offspring);
         int runningTotal = 0, j = 0, currFitness = 0, selectionPoint;
         for (int i = 0; i < populationSize; i++) {
-           
+
             selectionPoint = (int) ((Math.random() * totalFitness) % totalFitness) + 1;
-            
+
             while (runningTotal < selectionPoint) {
                 currFitness = currentGen.get(j).getFitness();
                 runningTotal += currFitness;
                 j++;
             }
-            
+
             nextGen[i] = currentGen.get(j - 1);
-            
+
             //To maintain diversity
             currentGen.remove(j - 1);
             totalFitness -= currFitness;
-            
+
             j = 0;
             runningTotal = 0;
         }
@@ -269,7 +293,7 @@ public class GeneticAlgorithm {
         }
         return ret;
     }
-    
+
     protected Individual bestIndividual(ArrayList<Individual> pop) {
         Individual ret = new Individual();
         for (Individual i : pop) {

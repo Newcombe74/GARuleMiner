@@ -139,17 +139,31 @@ public class GeneticAlgorithm {
     }
 
     protected Individual[] tournementSelection() {
-        Individual[] nextGen = new Individual[populationSize];
-
         if (offspring.length > 0) {
-            for (int i = 0; i < populationSize; i++) {
-                int parent = (int) ((Math.random() * population.length) % population.length);
-                int child = (int) ((Math.random() * offspring.length) % offspring.length);
+            Individual[] nextGen = new Individual[populationSize];
 
-                if (population[parent].getFitness() >= offspring[child].getFitness()) {
-                    nextGen[i] = new Individual(population[parent].getChromosome());
+            //Put parents and children into a single population
+            ArrayList<Individual> currentGen = new ArrayList<>();
+            currentGen.addAll(Arrays.asList(this.population));
+            currentGen.addAll(Arrays.asList(this.offspring));
+            
+            //Chosen Individuals
+            int indiv1Idx, indiv2Idx;
+            Individual indiv1, indiv2;
+            for (int i = 0; i < populationSize; i++) {
+                indiv1Idx = (int) ((Math.random() * currentGen.size())
+                        % currentGen.size());
+                indiv2Idx = (int) ((Math.random() * currentGen.size())
+                        % currentGen.size());
+                
+                indiv1 = currentGen.get(indiv1Idx);
+                indiv2 = currentGen.get(indiv2Idx);  
+                if (indiv1.getFitness() >= indiv2.getFitness()) {
+                    nextGen[i] = indiv1;
+                    currentGen.remove(indiv1Idx);
                 } else {
-                    nextGen[i] = new Individual(offspring[child].getChromosome());
+                    nextGen[i] = indiv2;
+                    currentGen.remove(indiv2Idx);
                 }
             }
 

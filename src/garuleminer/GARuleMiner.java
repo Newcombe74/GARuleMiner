@@ -36,7 +36,7 @@ public class GARuleMiner {
             N_GENS_MIN = 1,
             N_GENS_MAX = 200,
             N_GENS_RES_STEP = 1,
-            N_RUNS = 50,
+            N_RUNS = 20,
             N_RULES_MIN = 1,
             N_RULES_MAX = 100,
             N_RULES_RES_STEP = 1,
@@ -48,12 +48,12 @@ public class GARuleMiner {
     //Generations
     private static int[] nGensVariations;
     private static int nGensIdx = 0;
-    private static int nGens = 100;
+    private static int nGens = 200;
     //Mutation
     private static double[] mutationRateVariations;
     private static int mutationRateIdx = 0;
     private static double mutationRate = (double) 1 / popSize;
-    private static double mRateMod = 1.5;
+    private static double mRateMod = 1.6;
     //Rules
     private static int[] nRulesVariations;
     private static int nRulesIdx = 0;

@@ -82,21 +82,17 @@ public class RuleTester {
     private static void testData2Rule() throws FileNotFoundException {
         Rule[] data = readDataFile(2, DATA_TYPE_BINARY);
         char[] cond;
-        int zeroCount, nCorrectAssertions = 0;
+        int nCorrectAssertions = 0;
         boolean assertion, output;
 
         for (Rule rule : data) {
-            zeroCount = 0;
             cond = rule.getCharArr();
             output = rule.getOutput() == 1;
 
-            for (int c = 0; c < cond.length; c++) {
-                if (cond[c] == '0') {
-                    zeroCount++;
-                }
-            }
-
-            assertion = zeroCount == 1 || zeroCount == 3;
+            assertion = ((cond[0] == '1' && cond[1] == '1' && cond[2] == '1') 
+                    || (cond[0] == '0' && cond[1] == '0' && cond[5] == '1') 
+                    || (cond[0] == '1' && cond[1] == '0' && cond[3] == '1') 
+                    || (cond[0] == '0' && cond[1] == '1' && cond[4] == '1'));
 
             if (assertion == output) {
                 nCorrectAssertions++;

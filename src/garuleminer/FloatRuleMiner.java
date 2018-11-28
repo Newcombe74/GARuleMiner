@@ -103,7 +103,7 @@ public class FloatRuleMiner extends RuleMiner {
             }
             this.offspring = mutate();
 
-            this.offspring = calcFitness(this.offspring, this.vHoldDataRuleSet);
+            this.offspring = calcFitness(this.offspring, this.tDataRuleSet);
 
             this.population = selection(selectionType);
             this.validationPop = this.population;
@@ -511,7 +511,7 @@ public class FloatRuleMiner extends RuleMiner {
 
         //Put parents and children into a single population
         ArrayList<Individual> currentGen = new ArrayList<>();
-        currentGen.addAll(Arrays.asList(this.validationPop));
+        currentGen.addAll(Arrays.asList(this.population));
         currentGen.addAll(Arrays.asList(this.offspring));
 
         Individual bestIndiv;
@@ -531,7 +531,7 @@ public class FloatRuleMiner extends RuleMiner {
 
             //Put parents and children into a single population
             ArrayList<Individual> currentGen = new ArrayList<>();
-            currentGen.addAll(Arrays.asList(this.validationPop));
+            currentGen.addAll(Arrays.asList(this.population));
             currentGen.addAll(Arrays.asList(this.offspring));
 
             //Chosen Individuals
@@ -566,10 +566,10 @@ public class FloatRuleMiner extends RuleMiner {
 
         //Put parents and children into a single population
         ArrayList<Individual> currentGen = new ArrayList<>();
-        currentGen.addAll(Arrays.asList(this.validationPop));
+        currentGen.addAll(Arrays.asList(this.population));
         currentGen.addAll(Arrays.asList(this.offspring));
 
-        int totalFitness = sumFitness(this.validationPop) + sumFitness(this.offspring);
+        int totalFitness = sumFitness(this.population) + sumFitness(this.offspring);
         int runningTotal = 0, j = 0, currFitness = 0, selectionPoint;
         for (int i = 0; i < populationSize; i++) {
 

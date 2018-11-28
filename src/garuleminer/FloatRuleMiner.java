@@ -5,10 +5,15 @@
  */
 package garuleminer;
 
+import static geneticalgorithm.GeneticAlgorithm.SELECTION_ROULETTE;
+import static geneticalgorithm.GeneticAlgorithm.SELECTION_TOURNEMENT;
+import static geneticalgorithm.GeneticAlgorithm.SELECTION_TRUNCATION;
 import geneticalgorithm.Individual;
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  *
@@ -21,7 +26,7 @@ public class FloatRuleMiner extends RuleMiner {
     private int holdTrainDist = 80, kFolds = 5, kFoldTrainDist = 67;
     //Crossover
     public static final int CROSS_REG = 1, CROSS_BLEND_RAND = 2, CROSS_BLEND_CANON = 4;
-    private int blendPerc = 30;
+    private int blendPerc = 10;
     //Mutation
     public static final int MUT_CREEP = 1, MUT_CREEP_VAR = 2,
             MUT_GAUSS_STATIC = 3, MUT_GAUSS_VAR = 4;
@@ -76,12 +81,13 @@ public class FloatRuleMiner extends RuleMiner {
 
         //SET each individuals genes to be 1 or 0 at random
         initChromosomes();
+        this.validationPop = this.population;
+        this.population = calcFitness(this.population, this.tDataRuleSet);
+        this.validationPop = calcFitness(this.validationPop, this.vHoldDataRuleSet);
 
         double genPerc;
-
         for (int g = 0; g < this.numberOfGenerations; g++) {
             this.population = calcFitness(this.population, this.tDataRuleSet);
-            this.validationPop = calcFitness(this.population, this.vHoldDataRuleSet);
 
             recordResults(g);
             recordValidationResults(g);
@@ -97,12 +103,11 @@ public class FloatRuleMiner extends RuleMiner {
             }
             this.offspring = mutate();
 
-            this.offspring = calcFitness(this.offspring, this.tDataRuleSet);
+            this.offspring = calcFitness(this.offspring, this.vHoldDataRuleSet);
 
             this.population = selection(selectionType);
+            this.validationPop = this.population;
         }
-
-        this.population = calcFitness(this.population, this.vHoldDataRuleSet);
     }
 
     protected void recordValidationResults(int g) {
@@ -245,11 +250,14 @@ public class FloatRuleMiner extends RuleMiner {
         boolean cpCheck = false;
         double n, o;
 
+        //Randomise the order of population
+        Individual[] randPop = shufflePopulation(this.population);
+
         //Blend Parents into two children
         if (blen > 0) {
             for (int i = 0; i < populationSize - 1; i++) {
-                parent1 = population[i].getChromosome();
-                parent2 = population[(i + 1)].getChromosome();
+                parent1 = randPop[i].getChromosome();
+                parent2 = randPop[(i + 1)].getChromosome();
                 crossoverGenes[child1] = parent1;
                 crossoverGenes[child2] = parent2;
 
@@ -496,6 +504,97 @@ public class FloatRuleMiner extends RuleMiner {
     }
     //END_MUTATION
 
+    //START_Selection
+    @Override
+    protected Individual[] truncationSelection() {
+        Individual[] nextGen = new Individual[populationSize];
+
+        //Put parents and children into a single population
+        ArrayList<Individual> currentGen = new ArrayList<>();
+        currentGen.addAll(Arrays.asList(this.validationPop));
+        currentGen.addAll(Arrays.asList(this.offspring));
+
+        Individual bestIndiv;
+        for (int i = 0; i < nextGen.length; i++) {
+            bestIndiv = bestIndividual(currentGen);
+            nextGen[i] = bestIndiv;
+            currentGen.remove(bestIndiv);
+        }
+
+        return nextGen;
+    }
+
+    @Override
+    protected Individual[] tournementSelection() {
+        if (offspring.length > 0) {
+            Individual[] nextGen = new Individual[populationSize];
+
+            //Put parents and children into a single population
+            ArrayList<Individual> currentGen = new ArrayList<>();
+            currentGen.addAll(Arrays.asList(this.validationPop));
+            currentGen.addAll(Arrays.asList(this.offspring));
+
+            //Chosen Individuals
+            int indiv1Idx, indiv2Idx;
+            Individual indiv1, indiv2;
+            for (int i = 0; i < populationSize; i++) {
+                indiv1Idx = (int) ((Math.random() * currentGen.size())
+                        % currentGen.size());
+                indiv2Idx = (int) ((Math.random() * currentGen.size())
+                        % currentGen.size());
+
+                indiv1 = currentGen.get(indiv1Idx);
+                indiv2 = currentGen.get(indiv2Idx);
+                if (indiv1.getFitness() >= indiv2.getFitness()) {
+                    nextGen[i] = indiv1;
+                    currentGen.remove(indiv1Idx);
+                } else {
+                    nextGen[i] = indiv2;
+                    currentGen.remove(indiv2Idx);
+                }
+            }
+
+            return nextGen;
+        } else {
+            return population;
+        }
+    }
+
+    @Override
+    protected Individual[] rouletteWheelSelection() {
+        Individual[] nextGen = new Individual[populationSize];
+
+        //Put parents and children into a single population
+        ArrayList<Individual> currentGen = new ArrayList<>();
+        currentGen.addAll(Arrays.asList(this.validationPop));
+        currentGen.addAll(Arrays.asList(this.offspring));
+
+        int totalFitness = sumFitness(this.validationPop) + sumFitness(this.offspring);
+        int runningTotal = 0, j = 0, currFitness = 0, selectionPoint;
+        for (int i = 0; i < populationSize; i++) {
+
+            selectionPoint = (int) ((Math.random() * totalFitness) % totalFitness) + 1;
+
+            while (runningTotal < selectionPoint) {
+                currFitness = currentGen.get(j).getFitness();
+                runningTotal += currFitness;
+                j++;
+            }
+
+            nextGen[i] = currentGen.get(j - 1);
+
+            //To maintain diversity
+            currentGen.remove(j - 1);
+            totalFitness -= currFitness;
+
+            j = 0;
+            runningTotal = 0;
+        }
+
+        return nextGen;
+    }
+    //END_Selection
+
     @Override
     protected Individual[] calcFitness(Individual[] pop) {
         Individual[] ret = new Individual[pop.length];
@@ -618,6 +717,19 @@ public class FloatRuleMiner extends RuleMiner {
     }
 
     //START UTILS
+    private static Individual[] shufflePopulation(Individual[] pop) {
+        Individual indiv;
+        int idx;
+        Random rnd = ThreadLocalRandom.current();
+        for (int i = pop.length - 1; i > 0; i--) {
+            idx = rnd.nextInt(i + 1);
+            indiv = pop[idx];
+            pop[idx] = pop[i];
+            pop[i] = indiv;
+        }
+        return pop;
+    }
+
     private static float calcGauss(float x, float o) {
         return (float) Math.exp(-0.5 * (Math.pow(x, 2) / o));
     }

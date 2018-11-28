@@ -20,8 +20,6 @@ import javax.sound.sampled.Clip;
 
 import geneticalgorithm.*;
 import java.io.PrintWriter;
-import java.util.HashSet;
-import java.util.Set;
 
 /**
  *
@@ -30,8 +28,8 @@ import java.util.Set;
 public class GARuleMiner {
 
     //Hyperparameters
-    private static final int POP_SIZE_MIN = 100,
-            POP_SIZE_MAX = 1000,
+    private static final int POP_SIZE_MIN = 10,
+            POP_SIZE_MAX = 2000,
             POP_SIZE_RES_STEP = 10,
             N_GENS_MIN = 1,
             N_GENS_MAX = 200,
@@ -44,11 +42,11 @@ public class GARuleMiner {
     //Population
     private static int[] popSizeVariations;
     private static int popSizeIdx = 0;
-    private static int popSize = 100;
+    private static int popSize = 200;
     //Generations
     private static int[] nGensVariations;
     private static int nGensIdx = 0;
-    private static int nGens = 200;
+    private static int nGens = 400;
     //Mutation
     private static double[] mutationRateVariations;
     private static int mutationRateIdx = 0;
@@ -649,7 +647,7 @@ public class GARuleMiner {
         chromSize = ga.getChromosomeSize();
         initPopulationsCSV("PopulationSizeVarianceResults.csv");
 
-        runResults = new double[nRulesVariations.length][2][5][N_RUNS];
+        runResults = new double[popSizeVariations.length][2][5][N_RUNS];
 
         for (int p = 0; p < popSizeVariations.length; p++) {
             for (int r = 0; r < N_RUNS; r++) {
@@ -960,7 +958,7 @@ public class GARuleMiner {
         FloatRuleMiner ga = new FloatRuleMiner(popSize, nGens, data, nRules);
         ga.setMutationMethod(FloatRuleMiner.MUT_GAUSS_STATIC);
         chromSize = ga.getChromosomeSize();
-        initMethodResultsCSV("MutationGaussStaticVarResults.csv");
+        initMethodResultsCSV("MutationGaussStaticResults.csv");
 
         genResults = new double[2][nGens][RuleMiner.N_RESULT_SETS][N_RUNS];
 

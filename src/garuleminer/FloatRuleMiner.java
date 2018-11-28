@@ -87,8 +87,6 @@ public class FloatRuleMiner extends RuleMiner {
 
         double genPerc;
         for (int g = 0; g < this.numberOfGenerations; g++) {
-            this.population = calcFitness(this.population, this.tDataRuleSet);
-
             recordResults(g);
             recordValidationResults(g);
 
@@ -106,7 +104,7 @@ public class FloatRuleMiner extends RuleMiner {
             this.offspring = calcFitness(this.offspring, this.tDataRuleSet);
 
             this.population = selection(selectionType);
-            this.validationPop = this.population;
+            this.validationPop = calcFitness(this.population, this.vHoldDataRuleSet);
         }
     }
 
